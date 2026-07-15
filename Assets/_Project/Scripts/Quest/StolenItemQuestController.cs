@@ -46,6 +46,38 @@ namespace Voidovia
         public event Action<string> Log;
         public event Action<MapNodeData, RoadEdgeData> LairSpawnRequested;
 
+        public void ForceBeatForSave(StolenItemQuestBeat beat, string correctCityId = null)
+        {
+            Beat = beat;
+            if (!string.IsNullOrEmpty(correctCityId))
+                CorrectCityId = correctCityId;
+            if (beat >= StolenItemQuestBeat.LairSpawned && beat != StolenItemQuestBeat.Completed)
+            {
+                LairVisible = true;
+                // Re-emit lair if graph needs it
+                var lair = new MapNodeData
+                {
+                    id = LairNodeId,
+                    displayName = "Buttery Lair",
+                    type = NodeType.QuestLair,
+                    controllingFaction = FactionId.ButterKlanBoys,
+                    isTemporary = true,
+                    parentSettlementId = CorrectCityId
+                };
+                var link = new RoadEdgeData
+                {
+                    id = $"road_{CorrectCityId}_{LairNodeId}",
+                    fromNodeId = CorrectCityId,
+                    toNodeId = LairNodeId,
+                    travelHours = 3f,
+                    danger = 0.15f,
+                    terrain = TerrainType.Forest,
+                    allowSevereRaids = false
+                };
+                LairSpawnRequested?.Invoke(lair, link);
+            }
+        }
+
         public void StartQuest()
         {
             Beat = StolenItemQuestBeat.QuestGiven;

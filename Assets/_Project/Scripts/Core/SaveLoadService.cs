@@ -18,6 +18,7 @@ namespace Voidovia
         public string weapon;
         public string armour;
         public int questBeat;
+        public string correctCityId;
         public string invJson;
         public string foodJson;
         public string troopsJson;
@@ -29,6 +30,8 @@ namespace Voidovia
         const string FileName = "voidovia_save.json";
 
         public static string Path => System.IO.Path.Combine(Application.persistentDataPath, FileName);
+
+        public static bool SaveExists() => File.Exists(Path);
 
         public static void Save(GameState g)
         {
@@ -49,15 +52,15 @@ namespace Voidovia
                 vassal = g.Party.isVoidoviaVassal,
                 weapon = g.Party.equippedWeaponId,
                 armour = g.Party.equippedArmourId,
-                questBeat = (int)g.Act1Quest.Beat
+                questBeat = (int)g.Act1Quest.Beat,
+                correctCityId = g.Act1Quest.CorrectCityId
             };
-            // lightweight: recount stacks into pipe strings
             s.invJson = EncodeStacks(g.Party.inventory);
             s.foodJson = EncodeStacks(g.Party.food);
             s.troopsJson = EncodeTroops(g.Party.troops);
             s.cardsJson = EncodeStacks(g.Party.powerCards);
             File.WriteAllText(Path, JsonUtility.ToJson(s, true));
-            Debug.Log($"[Save] {Path}");
+            Debug.Log($"[Save] Wrote {Path}");
         }
 
         public static bool TryLoad(GameState g)
@@ -88,7 +91,10 @@ namespace Voidovia
             DecodeStacks(s.foodJson, g.Party.food);
             DecodeTroops(s.troopsJson, g.Party.troops);
             DecodeStacks(s.cardsJson, g.Party.powerCards);
-            Debug.Log("[Save] Loaded");
+            g.Act1Quest.ForceBeatForSave((StolenItemQuestBeat)s.questBeat, s.correctCityId);
+            if (g.Party.companionIds.Count == 0)
+                g.Party.companionIds.Add("bangkok_kuo");
+            Debug.Log("[Save] Loaded ok");
             return true;
         }
 

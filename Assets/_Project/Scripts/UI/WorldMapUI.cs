@@ -91,12 +91,14 @@ namespace Voidovia
             Stretch(_inspectBody, 0f, 0.32f, 0.58f, 0.78f);
 
             // Right column actions — larger touch targets
-            UiFactory.Button(bottom, "TravelBtn", "Travel", new Vector2(0.6f, 0.78f), new Vector2(0.99f, 0.96f), TravelToSelected);
-            UiFactory.Button(bottom, "AdvanceBtn", "Advance inch", new Vector2(0.6f, 0.58f), new Vector2(0.99f, 0.76f), AdvanceJourney);
-            UiFactory.Button(bottom, "SettleBtn", "Market/Recruit", new Vector2(0.6f, 0.38f), new Vector2(0.99f, 0.56f), OpenSettlement);
-            UiFactory.Button(bottom, "PartyBtn", "Party / Inv", new Vector2(0.6f, 0.18f), new Vector2(0.99f, 0.36f), OpenParty);
-            UiFactory.Button(bottom, "QuestBtn", "Quest", new Vector2(0.6f, 0.01f), new Vector2(0.79f, 0.16f), QuestAction);
-            UiFactory.Button(bottom, "MoreBtn", "More…", new Vector2(0.8f, 0.01f), new Vector2(0.99f, 0.16f), OpenMore);
+            UiFactory.Button(bottom, "TravelBtn", "Travel", new Vector2(0.6f, 0.80f), new Vector2(0.99f, 0.97f), TravelToSelected);
+            UiFactory.Button(bottom, "AdvanceBtn", "Advance inch", new Vector2(0.6f, 0.62f), new Vector2(0.99f, 0.78f), AdvanceJourney);
+            UiFactory.Button(bottom, "SettleBtn", "Market/Recruit", new Vector2(0.6f, 0.44f), new Vector2(0.99f, 0.60f), OpenSettlement);
+            UiFactory.Button(bottom, "PartyBtn", "Party / Inv", new Vector2(0.6f, 0.26f), new Vector2(0.99f, 0.42f), OpenParty);
+            UiFactory.Button(bottom, "QuestBtn", "Quest", new Vector2(0.6f, 0.14f), new Vector2(0.79f, 0.24f), QuestAction);
+            UiFactory.Button(bottom, "AdvisorBtn", "Advisor", new Vector2(0.8f, 0.14f), new Vector2(0.99f, 0.24f), AskAdvisor);
+            UiFactory.Button(bottom, "SaveBtn", "Save", new Vector2(0.6f, 0.01f), new Vector2(0.79f, 0.12f), DoSave);
+            UiFactory.Button(bottom, "LoadBtn", "Load", new Vector2(0.8f, 0.01f), new Vector2(0.99f, 0.12f), DoLoad);
 
             _logText = UiFactory.Label(bottom, "Log", "", 16, TextAnchor.LowerLeft, new Color(0.65f, 0.7f, 0.68f));
             Stretch(_logText, 0.02f, 0.02f, 0.58f, 0.3f);
@@ -501,27 +503,63 @@ namespace Voidovia
             ui.Open(RefreshHud);
         }
 
-        void OpenMore()
+        void AskAdvisor()
         {
             var g = GameState.Instance;
-            // cycle: advisor / books / save / load
-            if (g.Party.currentNodeId == "greyledger" &&
-                g.Act1Quest.Beat is StolenItemQuestBeat.QuestGiven or StolenItemQuestBeat.SeekAdvice or StolenItemQuestBeat.InvestigateCities)
+            if (g.Journey.IsActive)
             {
-                g.Act1Quest.SpeakToAdvisor();
-                AppendLog("Advisor: try Ashpond or Tollbar.");
+                AppendLog("On the road.");
                 return;
             }
 
-            if (g.Map.TryGetNode(g.Party.currentNodeId, out var node) && node.hasBookStore)
+            if (g.Party.currentNodeId != "greyledger")
             {
-                var books = FindObjectOfType<BookStoreUI>() ?? new GameObject("BookStoreUI").AddComponent<BookStoreUI>();
-                books.Open(RefreshHud);
+                AppendLog("Advisor is in Greyledger.");
                 return;
             }
 
-            SaveLoadService.Save(g);
-            AppendLog("Game saved. (Tap More again in Greyledger for advisor/books when relevant.)");
+            if (g.Map.TryGetNode(g.Party.currentNodeId, out var node) && node.hasBookStore &&
+                g.Act1Quest.Beat is StolenItemQuestBeat.InvestigateCities or StolenItemQuestBeat.ExButterIntel
+                    or StolenItemQuestBeat.LairSpawned or StolenItemQuestBeat.Completed)
+            {
+                // Secondary: books when advisor already done
+            }
+
+            g.Act1Quest.SpeakToAdvisor();
+            AppendLog("Advisor: try Ashpond or Tollbar.");
+        }
+
+        void DoSave()
+        {
+            SaveLoadService.Save(GameState.Instance);
+            AppendLog($"Saved → {SaveLoadService.Path}");
+        }
+
+        void DoLoad()
+        {
+            if (!SaveLoadService.SaveExists())
+            {
+                AppendLog("No save file yet.");
+                return;
+            }
+
+            if (GameState.Instance.Journey.IsActive)
+                GameState.Instance.Journey.Cancel();
+
+            if (!SaveLoadService.TryLoad(GameState.Instance))
+            {
+                AppendLog("Load failed — see Console.");
+                return;
+            }
+
+            ClearRouteHighlights();
+            RebuildDynamicNodes();
+            UpdatePlayerMarker();
+            CenterOnParty();
+            SelectNode(GameState.Instance.Party.currentNodeId);
+            RefreshWorldParties();
+            RefreshHud();
+            AppendLog($"Loaded {GameState.Instance.Hero.name}. Quest: {GameState.Instance.Act1Quest.Beat}");
         }
 
         void QuestAction()
@@ -538,6 +576,15 @@ namespace Voidovia
             {
                 g.Act1Quest.SpeakToAdvisor();
                 AppendLog("Advisor names Ashpond and Tollbar.");
+                return;
+            }
+
+            // Book store shortcut from quest when already advised
+            if (g.Map.TryGetNode(g.Party.currentNodeId, out var bookNode) && bookNode.hasBookStore &&
+                Input.GetKey(KeyCode.LeftShift))
+            {
+                var books = FindObjectOfType<BookStoreUI>() ?? new GameObject("BookStoreUI").AddComponent<BookStoreUI>();
+                books.Open(RefreshHud);
                 return;
             }
 
