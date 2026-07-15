@@ -30,5 +30,18 @@ namespace Voidovia
     public class TroopRosterData
     {
         public TroopDefinition[] troops = Array.Empty<TroopDefinition>();
+
+        public bool TryGet(string id, out TroopDefinition def)
+        {
+            foreach (var t in troops)
+            {
+                if (t.id != id) continue;
+                def = t;
+                return true;
+            }
+
+            def = null;
+            return false;
+        }
     }
 }

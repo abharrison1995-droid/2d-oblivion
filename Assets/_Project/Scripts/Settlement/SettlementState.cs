@@ -76,6 +76,9 @@ namespace Voidovia
             return true;
         }
 
+        /// <summary>Directly restores a building's state from a save file, bypassing CanUpgrade gating.</summary>
+        public void RestoreBuilding(BuildingType type, int tier, bool isBuilt) => Ensure(type, tier, isBuilt);
+
         public bool CanRecruitVoidKnight() =>
             GetTier(BuildingType.ChurchOfTheBlackFluffyTail) >= 1 && GrottoTier >= 4;
 

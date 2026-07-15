@@ -80,10 +80,15 @@ namespace Voidovia
             };
         }
 
-        public void ApplyOrigin(OriginChoice origin)
+        public SettlementState GetOrCreateSettlement(MapNodeData node)
         {
-            Hero.ApplyOrigin(origin);
-            ApplyStartKit(origin.spawnNodeId, origin.startingGold, origin.startingTroopIds, origin.id == "marsh_outlaw");
+            if (!Settlements.TryGetValue(node.id, out var settlement))
+            {
+                settlement = new SettlementState(node.id, node.displayName);
+                Settlements[node.id] = settlement;
+            }
+
+            return settlement;
         }
 
         public void ApplyCharacterCreation(CharacterCreationResult creation)

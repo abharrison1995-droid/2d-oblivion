@@ -121,32 +121,12 @@ namespace Voidovia
                 return;
             }
 
-            var player = new BattleForce { name = "Your warband", troops = new List<TroopStack>(g.Party.troops) };
-            var enemy = new BattleForce
+            var battleUi = FindObjectOfType<BattleUI>() ?? new GameObject("BattleUI").AddComponent<BattleUI>();
+            battleUi.BeginLairBattle(outcome =>
             {
-                name = "Buttery Lair",
-                troops = new List<TroopStack>
-                {
-                    new() { troopId = "void_militia", count = 8 },
-                    new() { troopId = "voidovan_cattle_rustler", count = 3 }
-                }
-            };
-
-            g.Battle.Begin(player, enemy, captureLordRequired: true, enemyLordId: StolenItemQuestController.ButterChiefId);
-            while (g.Battle.Phase != BattlePhase.Resolve)
-            {
-                var d = g.Battle.CurrentDecision();
-                if (d == null)
-                    break;
-                g.Battle.ApplyOrder(d.options[0], out var beat);
-                Append(beat);
-                if (!string.IsNullOrEmpty(d.sunTzuAside))
-                    Append(d.sunTzuAside);
-            }
-
-            var outcome = g.Battle.Resolve(g.Rng);
-            Append(outcome.summary);
-            g.Act1Quest.TryCompleteLairRaid(outcome, g.Party);
+                Append(outcome.summary);
+                g.Act1Quest.TryCompleteLairRaid(outcome, g.Party);
+            });
         }
 
         void TickDay()

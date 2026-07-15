@@ -677,7 +677,8 @@ namespace Voidovia
                 return;
             }
 
-            if (g.Party.currentNodeId == g.Act1Quest.LairNodeId && g.Act1Quest.LairVisible)
+            if (g.Party.currentNodeId == g.Act1Quest.LairNodeId && g.Act1Quest.LairVisible &&
+                g.Act1Quest.Beat == StolenItemQuestBeat.LairSpawned)
             {
                 FindObjectOfType<BattleUI>()?.BeginLairBattle(outcome =>
                 {

@@ -51,7 +51,7 @@ namespace Voidovia
             Beat = beat;
             if (!string.IsNullOrEmpty(correctCityId))
                 CorrectCityId = correctCityId;
-            if (beat >= StolenItemQuestBeat.LairSpawned && beat != StolenItemQuestBeat.Completed)
+            if (beat >= StolenItemQuestBeat.LairSpawned)
             {
                 LairVisible = true;
                 // Re-emit lair if graph needs it
