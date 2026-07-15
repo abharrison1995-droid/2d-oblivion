@@ -9,7 +9,6 @@ namespace Voidovia
     public class CharacterCreationUI : MonoBehaviour
     {
         public System.Action<CharacterCreationResult> Completed;
-        public System.Action LoadSaveRequested;
 
         int _step; // 0 name/family, 1 childhood, 2 moose, 3 confirm
         string _name = "";
@@ -93,19 +92,6 @@ namespace Voidovia
                             _step = 1;
                             Rebuild();
                         });
-                    }
-
-                    if (SaveLoadService.SaveExists())
-                    {
-                        UiFactory.Button(_choicesRoot, "LoadSave", "Load saved game", new Vector2(0.55f, 0f), new Vector2(1f, 0.12f),
-                            () => LoadSaveRequested?.Invoke());
-                    }
-                    else
-                    {
-                        var tip = UiFactory.Label(_choicesRoot, "NoSave", "No save yet — finish creation to begin.", 16, TextAnchor.MiddleRight, new Color(0.6f, 0.65f, 0.6f));
-                        var tr = tip.GetComponent<RectTransform>();
-                        tr.anchorMin = new Vector2(0.4f, 0f);
-                        tr.anchorMax = new Vector2(1f, 0.12f);
                     }
 
                     break;

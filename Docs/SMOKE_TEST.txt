@@ -3,10 +3,11 @@ Voidovia — Act 1 smoke test (10 steps).
 Open Assets/_Project/Scenes/Bootstrap.unity (or WorldMap.unity) and press Play. Pass = each
 step happens with no console errors and no blank/frozen Game view.
 
-1. Character creation UI appears. Fill it in and confirm (or tap Load if a save already
-   exists from a previous pass — skip to step 9 if so).
-2. World map opens. Log shows the welcome lines ("Butter rogues took it...", "Tip: use
-   Save / Load...").
+1. Title screen appears ("VOIDOVIA"). Click through. Main menu appears with New Game and
+   Continue (Continue is disabled/labelled "no save yet" unless a save already exists from
+   a previous pass). Tap New Game (or Continue — skip to step 9 if so).
+2. Character creation UI appears. Fill it in and confirm. World map opens. Log shows the
+   welcome lines ("Butter rogues took it...", "Tip: use Save / Load...").
 3. Select Greyledger, tap Travel, then tap Advance inch until you arrive.
 4. At Greyledger, tap Advisor. Log names Ashpond and Tollbar as leads; quest beat moves to
    InvestigateCities.

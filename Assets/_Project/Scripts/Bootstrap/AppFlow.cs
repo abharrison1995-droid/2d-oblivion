@@ -11,6 +11,8 @@ namespace Voidovia
         CharacterCreationUI _creation;
         WorldMapUI _map;
         BattleUI _battle;
+        TitleScreenUI _title;
+        MainMenuUI _mainMenu;
         bool _started;
 
         void Start()
@@ -26,8 +28,28 @@ namespace Voidovia
             _map = gameObject.AddComponent<WorldMapUI>();
             _creation = gameObject.AddComponent<CharacterCreationUI>();
             _creation.Completed += OnCreationDone;
-            _creation.LoadSaveRequested += OnLoadSaveRequested;
+
+            _title = gameObject.AddComponent<TitleScreenUI>();
+            _title.Show(ShowMainMenu);
+        }
+
+        void ShowMainMenu()
+        {
+            _title.Hide();
+            _mainMenu ??= gameObject.AddComponent<MainMenuUI>();
+            _mainMenu.Show(OnNewGame, OnContinue);
+        }
+
+        void OnNewGame()
+        {
+            _mainMenu.Hide();
             _creation.Show();
+        }
+
+        void OnContinue()
+        {
+            _mainMenu.Hide();
+            OnLoadSaveRequested();
         }
 
         void OnCreationDone(CharacterCreationResult result)
