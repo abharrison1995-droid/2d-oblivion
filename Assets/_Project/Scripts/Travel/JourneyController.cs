@@ -10,6 +10,7 @@ namespace Voidovia
         public string edgeId;
         public TerrainType terrain;
         public float danger;
+        public bool allowSevereRaids;
         public Vector2 worldPos; // map space
         public string fromNodeId;
         public string toNodeId;
@@ -90,6 +91,7 @@ namespace Voidovia
                         edgeId = edge.id,
                         terrain = edge.terrain,
                         danger = edge.danger,
+                        allowSevereRaids = edge.allowSevereRaids,
                         worldPos = pos,
                         fromNodeId = edge.fromNodeId,
                         toNodeId = edge.toNodeId,
@@ -146,7 +148,7 @@ namespace Voidovia
                 {
                     danger = Mathf.Clamp01(step.danger + 0.15f),
                     terrain = step.terrain,
-                    allowSevereRaids = false
+                    allowSevereRaids = step.allowSevereRaids
                 }, rng);
             }
 

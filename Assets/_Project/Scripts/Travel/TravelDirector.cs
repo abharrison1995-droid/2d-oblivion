@@ -45,7 +45,8 @@ namespace Voidovia
             TravelEncounterKind.Weather,
             TravelEncounterKind.MinorThieves,
             TravelEncounterKind.Refugees,
-            TravelEncounterKind.Healers
+            TravelEncounterKind.Healers,
+            TravelEncounterKind.BanditAmbush
         };
 
         public TravelEncounter RollEncounter(RoadEdgeData edge, System.Random rng)
@@ -139,7 +140,17 @@ namespace Voidovia
                 kind = kind,
                 title = "Hard rain",
                 body = "The road turns to soup. Travel slows.",
-                canFlee = false
+                canFlee = false,
+                canTalk = true
+            },
+            TravelEncounterKind.BanditAmbush => new TravelEncounter
+            {
+                kind = kind,
+                title = "Bandit ambush",
+                body = "An organized band blocks the road, weapons ready, hands out for toll.",
+                canFight = true,
+                canFlee = true,
+                canPay = true
             },
             _ => None()
         };

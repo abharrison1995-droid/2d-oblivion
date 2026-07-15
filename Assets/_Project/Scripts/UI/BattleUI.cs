@@ -38,6 +38,45 @@ namespace Voidovia
             Begin(player, enemy, true, StolenItemQuestController.ButterChiefId, onFinished);
         }
 
+        public void BeginEncounterBattle(TravelEncounterKind kind, Action<BattleOutcome> onFinished)
+        {
+            var g = GameState.Instance;
+            var player = new BattleForce { name = "Your warband", troops = new List<TroopStack>(g.Party.troops) };
+            Begin(player, EncounterForce(kind), false, null, onFinished);
+        }
+
+        static BattleForce EncounterForce(TravelEncounterKind kind) => kind switch
+        {
+            TravelEncounterKind.MinorThieves => new BattleForce
+            {
+                name = "Footpads",
+                troops = new List<TroopStack> { new() { troopId = "void_militia", count = 3 } }
+            },
+            TravelEncounterKind.BanditAmbush => new BattleForce
+            {
+                name = "Bandit ambush",
+                troops = new List<TroopStack>
+                {
+                    new() { troopId = "void_militia", count = 5 },
+                    new() { troopId = "voidovan_cattle_rustler", count = 2 }
+                }
+            },
+            TravelEncounterKind.ButterRaid => new BattleForce
+            {
+                name = "Butter warband",
+                troops = new List<TroopStack>
+                {
+                    new() { troopId = "void_militia", count = 6 },
+                    new() { troopId = "voidovan_cattle_rustler", count = 3 }
+                }
+            },
+            _ => new BattleForce
+            {
+                name = "Hostiles",
+                troops = new List<TroopStack> { new() { troopId = "void_militia", count = 2 } }
+            }
+        };
+
         public void Begin(BattleForce player, BattleForce enemy, bool captureLord, string lordId, Action<BattleOutcome> onFinished)
         {
             _onFinished = onFinished;
@@ -230,6 +269,9 @@ namespace Voidovia
             if (!_active) return;
             _active = false;
             var outcome = GameState.Instance.Battle.Finalize(GameState.Instance.Rng);
+
+            if (outcome.playerCasualties > 0)
+                GameState.Instance.Party.RemoveMen(outcome.playerCasualties);
 
             foreach (var cardId in outcome.rewardPowerCardIds)
             {

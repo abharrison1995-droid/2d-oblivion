@@ -51,6 +51,20 @@ namespace Voidovia
             }
         }
 
+        public void RemoveMen(int count)
+        {
+            var remaining = count;
+            troops.Sort((a, b) => b.count.CompareTo(a.count));
+            for (var i = 0; i < troops.Count && remaining > 0; i++)
+            {
+                var take = Math.Min(troops[i].count, remaining);
+                troops[i].count -= take;
+                remaining -= take;
+            }
+
+            troops.RemoveAll(t => t.count <= 0);
+        }
+
         public void AddInventory(string itemId, int count = 1)
         {
             foreach (var s in inventory)

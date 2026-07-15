@@ -156,6 +156,7 @@ namespace Voidovia
             }
 
             Party.isVoidoviaMercenary = true;
+            Travel.SevereRaidsUnlocked = true;
             message =
                 $"Lord Void offers a mercenary contract: {GameConstants.LordVoidMercenaryPurseMin}–{GameConstants.LordVoidMercenaryPurseMax} gold per week. Enough for some wages and food — not a deathball.";
             return true;
