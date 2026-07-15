@@ -1,70 +1,44 @@
 # Voidovia
 
-Gritty low-fantasy warband / dynasty game (Mount & Blade campaign loop, KCD-style travel, Football Manager battle decisions). Built for **Unity 2022.3 LTS** → iOS later.
+Gritty low-fantasy warband / dynasty game (Mount & Blade campaign loop, KCD-style travel, Football Manager battle decisions). **Unity 2022.3 LTS** → iOS later.
 
-## Open in Unity
+## Open & play (current build)
 
-1. Install **Unity Hub** + **Unity 2022.3.x LTS** (version in `ProjectSettings/ProjectVersion.txt`).
-2. Hub → **Add** → select this repo root.
-3. Open; let packages resolve.
-4. Press Play on `Assets/_Project/Scenes/WorldMap.unity` (or `Bootstrap.unity`).
+1. Install Unity Hub + **Unity 2022.3.x LTS**
+2. Hub → **Add** this repo root (folder with `Assets` / `Packages` / `ProjectSettings`)
+3. Open `Assets/_Project/Scenes/WorldMap.unity`
+4. Press **Play**
 
-First import may recreate `.meta` files and ask to upgrade packages — accept defaults.
+### What you should see
+1. **Character creation** — name + 3 questions (family / childhood / moose)
+2. **Scrollable world map** — drag to pan; tap nodes; inspect routes; Travel
+3. Far-realm capitals tagged **far realm** (skeleton only)
+4. At **Buttery Lair**, **Quest action** opens a real **battle decision** UI
 
-## Vertical slice (skeleton target)
+### Act 1 path
+Greyledger → Ask advisor → Ashpond or Tollbar → lair appears → travel `buttery_lair` → Quest action (battle) → deliver chief (Quest action again in a Voidovia hub after capture)
 
-Debug OnGUI on the WorldMap scene can drive:
+## Character creation → stats
 
-1. Origin spawn (default: Mill Levy) with stolen heirloom quest active  
-2. Travel node → node with light road encounters  
-3. Advisor in Greyledger → Ashpond / Tollbar investigation  
-4. Temporary **Buttery Lair** spawn  
-5. FM-style battle + **capture** Buttery Chief  
-6. Deliver chief → Lord Void **mercenary** offer  
-7. Relation ≥ 30 + good rep → **vassal** gate  
-8. Food ticks + weekly wages (+ mercenary purse)
+| Beat | Choices | Main lean |
+|------|---------|-----------|
+| Family | Diplomats / Traders / Nomads / Healers | Spawn + gold + base stats |
+| Child | Horses / Trading toys / Organizing teams / Stealing-fighting | Fine-tune + troop seed |
+| Moose | Nurse-release / Heal-sell / Kill-meat / Leave alone | Soft moral/trade/combat nudge |
+
+Exact modifiers live in `CharacterCreation.cs`.
+
+## Map UI intent
+Clear strategic map you can **comfortably drag/scroll**, tap towns to read faction/services/route time, then travel. Voidovia is fully wired; other kingdoms show as **skeleton nodes**.
+
+## Multi-kingdom “skeleton nodes” means
+Other factions’ capitals are **on the map now** (names, positions, border roads) so the world feels big — but they are flagged `isSkeleton`. No deep quests/recruit trees there yet. Full Voidovia content first; flesh those later without remaking the map.
+
+Skeleton places right now: Miregate (Butter), Ra-Xael Crownhold, Small/Long Spine hubs, Orthodox Bastion.
 
 ## Layout
-
 ```
-Assets/_Project/Scripts/     Core systems (namespace Voidovia)
-Assets/StreamingAssets/Data/ JSON: map, troops, food/items, factions
-Assets/_Project/Scenes/      Bootstrap, WorldMap, Battle
-Packages/                    UGUI, Input System, Newtonsoft
+Assets/_Project/Scripts/   systems + runtime UI
+Assets/StreamingAssets/Data/  map, troops, economy JSON
+Assets/_Project/Scenes/WorldMap.unity
 ```
-
-### Systems stubbed
-
-| Area | Classes |
-|------|---------|
-| Map | `WorldMapData`, `WorldGraph` |
-| Travel | `TravelDirector` |
-| Battle | `BattleDirector` |
-| Quest | `StolenItemQuestController` |
-| Party / economy | `PartyState`, `EconomyService` |
-| Settlements | `SettlementState` (Grotto gate, Church of the Black Fluffy Tail) |
-| Session | `GameState`, `GameBootstrap` |
-
-## Design locks (v1)
-
-- Start: **Voidovia** only  
-- Ruler: **Lord Void, The Wide Eyed Beast**  
-- Companion: **Bangkok Kuo**  
-- Capture lords; intentional execution only after you own land  
-- Food: grain / fish / meat etc. (M&B-style)  
-- Hire fee + wages + food  
-- Void Knight via **Church of the Black Fluffy Tail** (Grotto T4); mounted or foot choice  
-- Vassal at relation **+30** and good reputation  
-
-## Next build passes
-
-- Real map UI + route animation  
-- Proper battle UI decision cards  
-- Origin select screen  
-- Stores / tavern / recruitment UI  
-- Spear + crossbow lines  
-- Multi-kingdom skeleton nodes (non-Voidovia stubs)  
-
-## Note
-
-This environment has no Unity Editor — scenes and scripts are hand-authored for you to open locally. If a MonoBehaviour shows "missing script", reassign `GameBootstrap`, `WorldMapEntry`, or `DebugSliceHud` once in the Inspector.

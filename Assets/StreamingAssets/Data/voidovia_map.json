@@ -1,19 +1,25 @@
 {
-  "kingdomId": "voidovia",
-  "displayName": "Voidovia",
+  "kingdomId": "known_world",
+  "displayName": "Known World",
   "nodes": [
-    { "id": "greyledger", "displayName": "Greyledger", "type": 0, "controllingFaction": 1, "mapPosition": { "x": 0, "y": 0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true },
-    { "id": "saltmere", "displayName": "Saltmere", "type": 1, "controllingFaction": 1, "mapPosition": { "x": -2.5, "y": 1.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true },
-    { "id": "red_knoll", "displayName": "Red Knoll", "type": 1, "controllingFaction": 1, "mapPosition": { "x": 2.2, "y": 1.0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true },
-    { "id": "millwright", "displayName": "Millwright", "type": 1, "controllingFaction": 1, "mapPosition": { "x": 0.2, "y": -2.0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true },
-    { "id": "bastion_holt", "displayName": "Bastion Holt", "type": 2, "controllingFaction": 1, "mapPosition": { "x": 3.5, "y": 2.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": false, "hasRecruitment": true },
-    { "id": "ironcauseway", "displayName": "Ironcauseway", "type": 2, "controllingFaction": 1, "mapPosition": { "x": 5.0, "y": 3.0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true },
-    { "id": "ashpond", "displayName": "Ashpond", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -1.8, "y": -1.5 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true },
-    { "id": "cinderfield", "displayName": "Cinderfield", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -3.0, "y": -2.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true },
-    { "id": "lowferry", "displayName": "Lowferry", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -2.0, "y": 0.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true },
-    { "id": "sheepgate", "displayName": "Sheepgate", "type": 3, "controllingFaction": 1, "mapPosition": { "x": 1.2, "y": -2.8 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true },
-    { "id": "marshend", "displayName": "Marshend", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -3.5, "y": 1.8 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true },
-    { "id": "tollbar", "displayName": "Tollbar", "type": 3, "controllingFaction": 1, "mapPosition": { "x": 2.0, "y": -3.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true }
+    { "id": "greyledger", "displayName": "Greyledger", "type": 0, "controllingFaction": 1, "mapPosition": { "x": 0, "y": 0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "saltmere", "displayName": "Saltmere", "type": 1, "controllingFaction": 1, "mapPosition": { "x": -2.5, "y": 1.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "red_knoll", "displayName": "Red Knoll", "type": 1, "controllingFaction": 1, "mapPosition": { "x": 2.2, "y": 1.0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "millwright", "displayName": "Millwright", "type": 1, "controllingFaction": 1, "mapPosition": { "x": 0.2, "y": -2.0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "bastion_holt", "displayName": "Bastion Holt", "type": 2, "controllingFaction": 1, "mapPosition": { "x": 3.5, "y": 2.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "ironcauseway", "displayName": "Ironcauseway", "type": 2, "controllingFaction": 1, "mapPosition": { "x": 5.0, "y": 3.0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "ashpond", "displayName": "Ashpond", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -1.8, "y": -1.5 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "cinderfield", "displayName": "Cinderfield", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -3.0, "y": -2.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "lowferry", "displayName": "Lowferry", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -2.0, "y": 0.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "sheepgate", "displayName": "Sheepgate", "type": 3, "controllingFaction": 1, "mapPosition": { "x": 1.2, "y": -2.8 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "marshend", "displayName": "Marshend", "type": 3, "controllingFaction": 1, "mapPosition": { "x": -3.5, "y": 1.8 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+    { "id": "tollbar", "displayName": "Tollbar", "type": 3, "controllingFaction": 1, "mapPosition": { "x": 2.0, "y": -3.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": false, "hasRecruitment": true, "isSkeleton": false },
+
+    { "id": "butter_miregate", "displayName": "Miregate", "type": 0, "controllingFaction": 2, "mapPosition": { "x": 8.5, "y": -1.5 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": false, "isSkeleton": true },
+    { "id": "raxael_crown", "displayName": "Ra-Xael Crownhold", "type": 0, "controllingFaction": 3, "mapPosition": { "x": -7.5, "y": 4.5 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": true, "hasRecruitment": false, "isSkeleton": true },
+    { "id": "smallspine_hub", "displayName": "Small Spine Hub", "type": 1, "controllingFaction": 4, "mapPosition": { "x": 7.2, "y": 5.2 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": true, "hasRecruitment": false, "isSkeleton": true },
+    { "id": "longspine_hub", "displayName": "Long Spine Hub", "type": 1, "controllingFaction": 5, "mapPosition": { "x": 9.0, "y": 4.4 }, "isTemporary": false, "parentSettlementId": "", "hasStore": false, "hasTavern": true, "hasRecruitment": false, "isSkeleton": true },
+    { "id": "orthodoxy_bastion", "displayName": "Orthodox Bastion", "type": 0, "controllingFaction": 6, "mapPosition": { "x": 6.5, "y": 7.0 }, "isTemporary": false, "parentSettlementId": "", "hasStore": true, "hasTavern": false, "hasRecruitment": false, "isSkeleton": true }
   ],
   "roads": [
     { "id": "road_grey_salt", "fromNodeId": "greyledger", "toNodeId": "saltmere", "travelHours": 8, "danger": 0.18, "terrain": 0, "allowSevereRaids": false },
@@ -28,6 +34,13 @@
     { "id": "road_low_ash", "fromNodeId": "lowferry", "toNodeId": "ashpond", "travelHours": 5, "danger": 0.18, "terrain": 1, "allowSevereRaids": false },
     { "id": "road_ash_cinder", "fromNodeId": "ashpond", "toNodeId": "cinderfield", "travelHours": 5, "danger": 0.2, "terrain": 1, "allowSevereRaids": false },
     { "id": "road_salt_low", "fromNodeId": "saltmere", "toNodeId": "lowferry", "travelHours": 7, "danger": 0.3, "terrain": 3, "allowSevereRaids": false },
-    { "id": "road_grey_ash", "fromNodeId": "greyledger", "toNodeId": "ashpond", "travelHours": 8, "danger": 0.17, "terrain": 0, "allowSevereRaids": false }
+    { "id": "road_grey_ash", "fromNodeId": "greyledger", "toNodeId": "ashpond", "travelHours": 8, "danger": 0.17, "terrain": 0, "allowSevereRaids": false },
+
+    { "id": "road_iron_butter", "fromNodeId": "ironcauseway", "toNodeId": "butter_miregate", "travelHours": 14, "danger": 0.4, "terrain": 3, "allowSevereRaids": true },
+    { "id": "road_iron_smallspine", "fromNodeId": "ironcauseway", "toNodeId": "smallspine_hub", "travelHours": 12, "danger": 0.32, "terrain": 4, "allowSevereRaids": false },
+    { "id": "road_spine_bridge", "fromNodeId": "smallspine_hub", "toNodeId": "longspine_hub", "travelHours": 6, "danger": 0.15, "terrain": 4, "allowSevereRaids": false },
+    { "id": "road_iron_orthodoxy", "fromNodeId": "ironcauseway", "toNodeId": "orthodoxy_bastion", "travelHours": 13, "danger": 0.28, "terrain": 0, "allowSevereRaids": false },
+    { "id": "road_salt_raxael", "fromNodeId": "saltmere", "toNodeId": "raxael_crown", "travelHours": 16, "danger": 0.25, "terrain": 0, "allowSevereRaids": false },
+    { "id": "road_spine_orthodoxy", "fromNodeId": "longspine_hub", "toNodeId": "orthodoxy_bastion", "travelHours": 10, "danger": 0.3, "terrain": 2, "allowSevereRaids": false }
   ]
 }

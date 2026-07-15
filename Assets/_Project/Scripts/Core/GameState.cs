@@ -66,10 +66,41 @@ namespace Voidovia
         public void ApplyOrigin(OriginChoice origin)
         {
             Hero.ApplyOrigin(origin);
-            Party.currentNodeId = origin.spawnNodeId;
-            Party.gold = origin.startingGold;
+            ApplyStartKit(origin.spawnNodeId, origin.startingGold, origin.startingTroopIds, origin.id == "marsh_outlaw");
+        }
+
+        public void ApplyCharacterCreation(CharacterCreationResult creation)
+        {
+            Hero.name = creation.heroName;
+            Hero.originId = $"{creation.family}_{creation.childhood}_{creation.moose}";
+            Hero.combat = creation.combat;
+            Hero.leadership = creation.leadership;
+            Hero.tactics = creation.tactics;
+            Hero.trade = creation.trade;
+            Hero.scouting = creation.scouting;
+
+            ApplyStartKit(creation.spawnNodeId, creation.startingGold, creation.startingTroopIds, creation.wantedLean);
+
+            if (creation.moose == MooseChoice.KillForMeat)
+                Party.food.Add(new InventoryStack { itemId = "meat", count = 3 });
+
+            if (creation.healerAffinity)
+                Party.AddRelation(FactionId.Healers, 5);
+            if (creation.horseAffinity)
+                Party.AddRelation(FactionId.Nomads, 5);
+
+            Debug.Log($"[Origin] {creation.originSummary}");
+        }
+
+        void ApplyStartKit(string spawnNodeId, int gold, string[] troopIds, bool wantedLean)
+        {
+            Party.currentNodeId = spawnNodeId;
+            Party.gold = gold;
             Party.troops.Clear();
-            foreach (var troopId in origin.startingTroopIds)
+            Party.food.Clear();
+            Party.inventory.Clear();
+            Party.companionIds.Clear();
+            foreach (var troopId in troopIds)
                 AddTroop(troopId, 1);
 
             Party.food.Add(new InventoryStack { itemId = "grain", count = 8 });
@@ -77,8 +108,7 @@ namespace Voidovia
             Party.companionIds.Add("bangkok_kuo");
             Party.relations[FactionId.Voidovia] = 0;
             Party.reputation = ReputationFlag.Good;
-
-            if (origin.id == "marsh_outlaw")
+            if (wantedLean)
                 Party.reputation |= ReputationFlag.WantedInVoidovia;
         }
 

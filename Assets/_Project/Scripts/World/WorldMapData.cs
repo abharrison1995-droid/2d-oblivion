@@ -16,6 +16,10 @@ namespace Voidovia
         public bool hasStore;
         public bool hasTavern;
         public bool hasRecruitment;
+        /// <summary>
+        /// Visible on the strategic map, but deep content comes later.
+        /// </summary>
+        public bool isSkeleton;
     }
 
     [Serializable]
