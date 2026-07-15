@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,6 +28,10 @@ namespace Voidovia
         GameObject _encounterPanel;
         Text _encounterTitle;
         Text _encounterBody;
+        Button _fightBtn;
+        Button _fleeBtn;
+        Button _talkBtn;
+        Button _booksBtn;
         TravelEncounter _pendingEncounter;
 
         public void Show()
@@ -95,8 +100,10 @@ namespace Voidovia
             UiFactory.Button(bottom, "AdvanceBtn", "Advance inch", new Vector2(0.6f, 0.62f), new Vector2(0.99f, 0.78f), AdvanceJourney);
             UiFactory.Button(bottom, "SettleBtn", "Market/Recruit", new Vector2(0.6f, 0.44f), new Vector2(0.99f, 0.60f), OpenSettlement);
             UiFactory.Button(bottom, "PartyBtn", "Party / Inv", new Vector2(0.6f, 0.26f), new Vector2(0.99f, 0.42f), OpenParty);
-            UiFactory.Button(bottom, "QuestBtn", "Quest", new Vector2(0.6f, 0.14f), new Vector2(0.79f, 0.24f), QuestAction);
-            UiFactory.Button(bottom, "AdvisorBtn", "Advisor", new Vector2(0.8f, 0.14f), new Vector2(0.99f, 0.24f), AskAdvisor);
+            UiFactory.Button(bottom, "QuestBtn", "Quest", new Vector2(0.6f, 0.14f), new Vector2(0.72f, 0.24f), QuestAction);
+            UiFactory.Button(bottom, "AdvisorBtn", "Advisor", new Vector2(0.73f, 0.14f), new Vector2(0.85f, 0.24f), AskAdvisor);
+            _booksBtn = UiFactory.Button(bottom, "BooksBtn", "Books", new Vector2(0.86f, 0.14f), new Vector2(0.99f, 0.24f), OpenBookStore);
+            _booksBtn.gameObject.SetActive(false);
             UiFactory.Button(bottom, "SaveBtn", "Save", new Vector2(0.6f, 0.01f), new Vector2(0.79f, 0.12f), DoSave);
             UiFactory.Button(bottom, "LoadBtn", "Load", new Vector2(0.8f, 0.01f), new Vector2(0.99f, 0.12f), DoLoad);
 
@@ -115,9 +122,9 @@ namespace Voidovia
             Stretch(_encounterTitle, 0.05f, 0.75f, 0.95f, 0.95f);
             _encounterBody = UiFactory.Label(panel, "B", "", 22, TextAnchor.UpperLeft, Color.white);
             Stretch(_encounterBody, 0.06f, 0.35f, 0.94f, 0.74f);
-            UiFactory.Button(panel, "Fight", "Fight", new Vector2(0.05f, 0.05f), new Vector2(0.32f, 0.28f), () => ResolveEncounter("fight"));
-            UiFactory.Button(panel, "Flee", "Flee", new Vector2(0.36f, 0.05f), new Vector2(0.63f, 0.28f), () => ResolveEncounter("flee"));
-            UiFactory.Button(panel, "Talk", "Talk/Pay", new Vector2(0.67f, 0.05f), new Vector2(0.95f, 0.28f), () => ResolveEncounter("talk"));
+            _fightBtn = UiFactory.Button(panel, "Fight", "Fight", new Vector2(0.05f, 0.05f), new Vector2(0.32f, 0.28f), () => ResolveEncounter("fight"));
+            _fleeBtn = UiFactory.Button(panel, "Flee", "Flee", new Vector2(0.36f, 0.05f), new Vector2(0.63f, 0.28f), () => ResolveEncounter("flee"));
+            _talkBtn = UiFactory.Button(panel, "Talk", "Talk/Pay", new Vector2(0.67f, 0.05f), new Vector2(0.95f, 0.28f), () => ResolveEncounter("talk"));
         }
 
         static void Stretch(Text t, float x0, float y0, float x1, float y1)
@@ -416,10 +423,7 @@ namespace Voidovia
 
             if (encounter.kind != TravelEncounterKind.None)
             {
-                _pendingEncounter = encounter;
-                _encounterTitle.text = encounter.title;
-                _encounterBody.text = encounter.body + "\n\nNearby bands may also be watching.";
-                _encounterPanel.SetActive(true);
+                ShowEncounterPanel(encounter);
                 return;
             }
 
@@ -429,28 +433,103 @@ namespace Voidovia
                     $"Inch {g.Journey.StepIndex}/{g.Journey.Steps.Count} → {g.Journey.DestinationId}";
         }
 
+        void ShowEncounterPanel(TravelEncounter encounter)
+        {
+            _pendingEncounter = encounter;
+            _encounterTitle.text = encounter.title;
+            _encounterBody.text = encounter.body + "\n\nNearby bands may also be watching.";
+            _fightBtn.gameObject.SetActive(encounter.canFight);
+            _fleeBtn.gameObject.SetActive(encounter.canFlee);
+            var showTalk = encounter.canTalk || encounter.canPay;
+            _talkBtn.gameObject.SetActive(showTalk);
+            if (showTalk)
+            {
+                var cost = EncounterCost(encounter.kind);
+                var label = _talkBtn.GetComponentInChildren<Text>();
+                label.text = cost > 0 ? $"Pay {cost}g" : "Talk";
+            }
+
+            _encounterPanel.SetActive(true);
+        }
+
+        static int EncounterCost(TravelEncounterKind kind) => kind switch
+        {
+            TravelEncounterKind.Trader => 10,
+            TravelEncounterKind.Healers => 10,
+            TravelEncounterKind.Refugees => 6,
+            TravelEncounterKind.MinorThieves => 10,
+            TravelEncounterKind.BanditAmbush => 25,
+            TravelEncounterKind.ButterRaid => 60,
+            _ => 0
+        };
+
         void ResolveEncounter(string choice)
         {
             _encounterPanel.SetActive(false);
             var e = _pendingEncounter;
             if (e == null) return;
+
+            if (choice == "fight" && e.canFight)
+            {
+                _pendingEncounter = null;
+                var battleUi = FindObjectOfType<BattleUI>() ?? new GameObject("BattleUI").AddComponent<BattleUI>();
+                battleUi.BeginEncounterBattle(e.kind, outcome => OnEncounterBattleResolved(outcome, e));
+                return;
+            }
+
             switch (choice)
             {
-                case "fight" when e.canFight:
-                    AppendLog($"You fight through: {e.title}");
-                    break;
                 case "flee" when e.canFlee:
                     AppendLog($"You slip away from: {e.title}");
                     break;
+                case "talk" when e.canTalk || e.canPay:
+                    ResolveTalkOrPay(e);
+                    break;
                 default:
-                    AppendLog($"You deal with it by talk/coin: {e.title}");
-                    if (GameState.Instance.Party.gold >= 5)
-                        GameState.Instance.Party.gold -= 5;
+                    AppendLog($"Nothing to be done here: {e.title}");
                     break;
             }
 
             _pendingEncounter = null;
             RefreshHud();
+            AdvanceOrFinishAfterEncounter();
+        }
+
+        void ResolveTalkOrPay(TravelEncounter e)
+        {
+            var g = GameState.Instance;
+            var cost = EncounterCost(e.kind);
+            if (cost > 0)
+            {
+                var paid = Mathf.Min(cost, g.Party.gold);
+                g.Party.gold -= paid;
+                AppendLog(paid >= cost
+                    ? $"You pay {paid}g: {e.title}"
+                    : $"You scrape together {paid}g (short of the {cost}g asked): {e.title}");
+            }
+            else
+            {
+                AppendLog($"You talk your way through: {e.title}");
+            }
+
+            if (e.kind == TravelEncounterKind.Trader)
+            {
+                g.Party.food.Add(new InventoryStack { itemId = "bread", count = 2 });
+                AppendLog("Bought 2 bread from the trader.");
+            }
+        }
+
+        void OnEncounterBattleResolved(BattleOutcome outcome, TravelEncounter e)
+        {
+            AppendLog(outcome.playerVictory
+                ? $"You best the {e.title}. {outcome.summary}"
+                : $"You're driven off by the {e.title}. {outcome.summary}");
+            RefreshHud();
+            AdvanceOrFinishAfterEncounter();
+        }
+
+        void AdvanceOrFinishAfterEncounter()
+        {
             if (!GameState.Instance.Journey.IsActive)
                 OnJourneyFinished();
             else
@@ -500,6 +579,25 @@ namespace Voidovia
         void OpenParty()
         {
             var ui = FindObjectOfType<PartyPanelUI>() ?? new GameObject("PartyPanelUI").AddComponent<PartyPanelUI>();
+            ui.Open(RefreshHud);
+        }
+
+        void OpenBookStore()
+        {
+            var g = GameState.Instance;
+            if (g.Journey.IsActive)
+            {
+                AppendLog("Finish or wait — you're on the road.");
+                return;
+            }
+
+            if (!g.Map.TryGetNode(g.Party.currentNodeId, out var node) || !node.hasBookStore)
+            {
+                AppendLog("No book store here.");
+                return;
+            }
+
+            var ui = FindObjectOfType<BookStoreUI>() ?? new GameObject("BookStoreUI").AddComponent<BookStoreUI>();
             ui.Open(RefreshHud);
         }
 
@@ -579,15 +677,6 @@ namespace Voidovia
                 return;
             }
 
-            // Book store shortcut from quest when already advised
-            if (g.Map.TryGetNode(g.Party.currentNodeId, out var bookNode) && bookNode.hasBookStore &&
-                Input.GetKey(KeyCode.LeftShift))
-            {
-                var books = FindObjectOfType<BookStoreUI>() ?? new GameObject("BookStoreUI").AddComponent<BookStoreUI>();
-                books.Open(RefreshHud);
-                return;
-            }
-
             if (g.Party.currentNodeId == g.Act1Quest.LairNodeId && g.Act1Quest.LairVisible)
             {
                 FindObjectOfType<BattleUI>()?.BeginLairBattle(outcome =>
@@ -636,6 +725,8 @@ namespace Voidovia
             _hud.text =
                 $"{GameState.Instance.Hero.name} · Day {p.day} · {p.gold}g · Food~{days:0.0}d · Wages {wages}/wk · {p.TotalMen} men · {p.currentNodeId}";
             UpdatePlayerMarker();
+            if (_booksBtn != null)
+                _booksBtn.gameObject.SetActive(GameState.Instance.Map.TryGetNode(p.currentNodeId, out var here) && here.hasBookStore);
         }
 
         void Update()

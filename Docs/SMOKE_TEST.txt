@@ -1,0 +1,27 @@
+Voidovia — Act 1 smoke test (10 steps).
+
+Open Assets/_Project/Scenes/Bootstrap.unity (or WorldMap.unity) and press Play. Pass = each
+step happens with no console errors and no blank/frozen Game view.
+
+1. Character creation UI appears. Fill it in and confirm (or tap Load if a save already
+   exists from a previous pass — skip to step 9 if so).
+2. World map opens. Log shows the welcome lines ("Butter rogues took it...", "Tip: use
+   Save / Load...").
+3. Select Greyledger, tap Travel, then tap Advance inch until you arrive.
+4. At Greyledger, tap Advisor. Log names Ashpond and Tollbar as leads; quest beat moves to
+   InvestigateCities.
+5. Travel to either Ashpond or Tollbar (either is fine — picking the wrong one still
+   redirects you). On arrival, intel resolves automatically and the Buttery Lair node
+   appears on the map near the correct city; quest beat is LairSpawned.
+6. Travel to the Buttery Lair node.
+7. Tap Quest while at the lair to start the raid battle. Win AND capture the Buttery Chief
+   (a win without capture does not advance the quest).
+8. Quest beat is now ChiefCaptured; log confirms the heirloom was recovered.
+9. Travel to Greyledger, Bastion Holt, or Red Knoll and tap Quest again. The Void Audience
+   panel opens — pick Accept (mercenary contract) or Refuse.
+10. Quest beat is Completed. Tap Save, then Load, and confirm hero name, gold, quest beat,
+    and location all match what you had before loading.
+
+Faster manual pass: DebugSliceHud (the IMGUI panel in the top-left corner during Play) has
+buttons that shortcut steps 3-9 without needing to drive the map UI — useful for quickly
+re-checking quest/battle logic after a script change.

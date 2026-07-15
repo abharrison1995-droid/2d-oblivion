@@ -40,15 +40,6 @@ namespace Voidovia
             }
         }
 
-        public void Tick(float hours)
-        {
-            foreach (var p in Parties)
-            {
-                // home/target are nodes; move toward target in map space using stored positions refreshed by UI if needed
-                // Directional drift — UI passes target positions via RefreshTargets when graph known
-            }
-        }
-
         public void TickTowardTargets(WorldGraph map, float hours)
         {
             foreach (var p in Parties)
