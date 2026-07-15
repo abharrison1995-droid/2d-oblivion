@@ -1,6 +1,6 @@
 # Voidovia
 
-Gritty low-fantasy warband / dynasty game (Mount & Blade campaign loop, KCD-style travel, Football Manager battle decisions). **Unity 2022.3 LTS** → iOS later.
+Gritty low-fantasy warband / dynasty game (Mount & Blade campaign loop, KCD-style travel, card-driven text battles). **Unity 2022.3 LTS** → iOS later.
 
 ## Open & play (current build)
 
@@ -13,10 +13,24 @@ Gritty low-fantasy warband / dynasty game (Mount & Blade campaign loop, KCD-styl
 1. **Character creation** — name + 3 questions (family / childhood / moose)
 2. **Scrollable world map** — drag to pan; tap nodes; inspect routes; Travel
 3. Far-realm capitals tagged **far realm** (skeleton only)
-4. At **Buttery Lair**, **Quest action** opens a real **battle decision** UI
+4. **Greyledger Book Store** — expensive power cards
+5. At **Buttery Lair**, **Quest action** opens **card battle** UI
 
 ### Act 1 path
-Greyledger → Ask advisor → Ashpond or Tollbar → lair appears → travel `buttery_lair` → Quest action (battle) → deliver chief (Quest action again in a Voidovia hub after capture)
+Greyledger → Ask advisor → Ashpond or Tollbar → lair appears → travel to lair → Quest action (card battle) → deliver chief
+
+## Battle cards (prototype)
+
+Text battle + unit counts/bars.
+
+- **Command cards** each turn (Hold the Line, Charge, Slowly Engage, Mounts Flank…)  
+  Pick **one per unit type** you field (infantry + mounts in the same turn is intended).
+- **Power cards** (rare): e.g. Spearmen Sickness (−20% enemy spears). Once each per battle.
+- Clash has **RNG swing** every turn.
+- Buy powers at **Greyledger Book Store** for ~1100–2000g.
+- **Buttery Chief** drops a boss treatise on capture.
+
+Data: `Assets/StreamingAssets/Data/battle_cards.json`
 
 ## Character creation → stats
 
@@ -26,19 +40,12 @@ Greyledger → Ask advisor → Ashpond or Tollbar → lair appears → travel `b
 | Child | Horses / Trading toys / Organizing teams / Stealing-fighting | Fine-tune + troop seed |
 | Moose | Nurse-release / Heal-sell / Kill-meat / Leave alone | Soft moral/trade/combat nudge |
 
-Exact modifiers live in `CharacterCreation.cs`.
-
-## Map UI intent
-Clear strategic map you can **comfortably drag/scroll**, tap towns to read faction/services/route time, then travel. Voidovia is fully wired; other kingdoms show as **skeleton nodes**.
-
-## Multi-kingdom “skeleton nodes” means
-Other factions’ capitals are **on the map now** (names, positions, border roads) so the world feels big — but they are flagged `isSkeleton`. No deep quests/recruit trees there yet. Full Voidovia content first; flesh those later without remaking the map.
-
-Skeleton places right now: Miregate (Butter), Ra-Xael Crownhold, Small/Long Spine hubs, Orthodox Bastion.
+## Multi-kingdom skeleton nodes
+Other faction capitals are on the map (`isSkeleton`) with roads, but deep content comes later. Voidovia is the playable kingdom for Act 1.
 
 ## Layout
 ```
 Assets/_Project/Scripts/   systems + runtime UI
-Assets/StreamingAssets/Data/  map, troops, economy JSON
+Assets/StreamingAssets/Data/  map, troops, economy, battle_cards
 Assets/_Project/Scenes/WorldMap.unity
 ```
