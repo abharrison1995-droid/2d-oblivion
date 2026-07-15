@@ -22,6 +22,7 @@ namespace Voidovia
         Text _body;
         Text _statsPreview;
         RectTransform _choicesRoot;
+        RectTransform _portraitSlot;
 
         public void Show()
         {
@@ -40,10 +41,12 @@ namespace Voidovia
             titleRt.anchorMin = new Vector2(0.05f, 0.88f);
             titleRt.anchorMax = new Vector2(0.95f, 0.98f);
 
+            _portraitSlot = UiFactory.Panel(root, "PortraitSlot", new Vector2(0.78f, 0.62f), new Vector2(0.94f, 0.87f), Color.clear);
+
             _body = UiFactory.Label(root, "Body", "", 26, TextAnchor.UpperLeft, new Color(0.85f, 0.84f, 0.8f));
             var bodyRt = _body.GetComponent<RectTransform>();
             bodyRt.anchorMin = new Vector2(0.06f, 0.62f);
-            bodyRt.anchorMax = new Vector2(0.94f, 0.87f);
+            bodyRt.anchorMax = new Vector2(0.76f, 0.87f);
 
             _choicesRoot = UiFactory.Panel(root, "Choices", new Vector2(0.06f, 0.22f), new Vector2(0.94f, 0.60f), new Color(0, 0, 0, 0.15f));
 
@@ -65,6 +68,10 @@ namespace Voidovia
         {
             foreach (Transform child in _choicesRoot)
                 Destroy(child.gameObject);
+
+            foreach (Transform child in _portraitSlot)
+                Destroy(child.gameObject);
+            UiFactory.Portrait(_portraitSlot, "Portrait", Vector2.zero, Vector2.one, "hero_" + _family.ToString().ToLowerInvariant());
 
             var preview = CharacterCreation.Build(_name, _family, _childhood, _moose);
             _statsPreview.text =

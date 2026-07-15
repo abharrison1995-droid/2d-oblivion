@@ -99,6 +99,40 @@ namespace Voidovia
             return btn;
         }
 
+        /// <summary>
+        /// Character image loaded from Resources/Portraits/{portraitId}. Falls back to a
+        /// deterministic colored square with initials when no art exists yet for that id.
+        /// </summary>
+        public static UnityEngine.UI.Image Portrait(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, string portraitId)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            var img = go.AddComponent<UnityEngine.UI.Image>();
+
+            var sprite = PortraitLoader.Load(portraitId);
+            if (sprite != null)
+            {
+                img.sprite = sprite;
+                img.preserveAspect = true;
+                img.color = Color.white;
+            }
+            else
+            {
+                img.color = PortraitLoader.PlaceholderColor(portraitId);
+                var label = Label(go.transform, "Initials", PortraitLoader.Initials(portraitId), 36, TextAnchor.MiddleCenter, Color.white);
+                var lrt = label.GetComponent<RectTransform>();
+                lrt.offsetMin = Vector2.zero;
+                lrt.offsetMax = Vector2.zero;
+            }
+
+            return img;
+        }
+
         public static UnityEngine.UI.InputField Input(Transform parent, string name, string placeholder, Vector2 anchorMin, Vector2 anchorMax)
         {
             var go = new GameObject(name, typeof(RectTransform));

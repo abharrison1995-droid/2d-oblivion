@@ -35,9 +35,11 @@ namespace Voidovia
             tr.anchorMin = new Vector2(0.05f, 0.88f);
             tr.anchorMax = new Vector2(0.95f, 0.97f);
 
+            UiFactory.Portrait(root, "Portrait", new Vector2(0.08f, 0.62f), new Vector2(0.30f, 0.86f), "lord_void");
+
             _body = UiFactory.Label(root, "Body", "", 24, TextAnchor.UpperLeft, new Color(0.85f, 0.84f, 0.8f));
             var br = _body.GetComponent<RectTransform>();
-            br.anchorMin = new Vector2(0.08f, 0.28f);
+            br.anchorMin = new Vector2(0.34f, 0.28f);
             br.anchorMax = new Vector2(0.92f, 0.86f);
 
             UiFactory.Button(root, "Accept", "Accept mercenary contract", new Vector2(0.1f, 0.12f), new Vector2(0.9f, 0.24f), () =>
