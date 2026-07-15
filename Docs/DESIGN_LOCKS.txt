@@ -1,0 +1,9 @@
+Voidovia — design locks captured in code/data (do not expand scope until vertical slice plays).
+
+World: Voidovia start; Lord Void (Wide Eyed Beast); Bangkok Kuo companion.
+Act 1: stolen item → advisor → two cities → temp Buttery Lair → capture chief (no early executions).
+Travel: node graph + light encounters; severe Butter raids gated.
+Battle: FM-style decision phases + unit-type orders.
+Economy: hire fee, wages, M&B food types; Void merc purse 200–400/week.
+City: Governor's Grotto gates tiers; Church of the Black Fluffy Tail @ Grotto 4 → Void Knight mount/foot.
+Vassal: relation ≥ 30 + good reputation after mercenary contract.
