@@ -14,8 +14,11 @@ namespace Voidovia
         public CharacterStats Hero { get; private set; }
         public WorldGraph Map { get; private set; }
         public TravelDirector Travel { get; private set; }
+        public JourneyController Journey { get; private set; }
+        public WorldPartyDirector WorldParties { get; private set; }
         public BattleDirector Battle { get; private set; }
         public EconomyService Economy { get; private set; }
+        public MarketService Market { get; private set; }
         public StolenItemQuestController Act1Quest { get; private set; }
         public Dictionary<string, SettlementState> Settlements { get; } = new();
 
@@ -39,8 +42,11 @@ namespace Voidovia
             Hero = new CharacterStats();
             Map = new WorldGraph();
             Travel = new TravelDirector();
+            Journey = new JourneyController();
+            WorldParties = new WorldPartyDirector();
             Battle = new BattleDirector();
             Economy = new EconomyService();
+            Market = new MarketService();
             Act1Quest = new StolenItemQuestController();
         }
 
@@ -52,17 +58,24 @@ namespace Voidovia
             Map.Load(map);
             Economy.LoadFood(catalog.foods);
             Economy.LoadTroops(troops.troops);
+            Market.SetRng(Rng);
+            Market.LoadItems(catalog.items);
             if (cards?.cards != null)
                 Battle.LoadCatalog(cards.cards);
+
+            foreach (var node in map.nodes)
+            {
+                if (node.hasRecruitment || node.hasStore || node.type == NodeType.Village)
+                    Market.EnsureMarket(node);
+            }
+
+            WorldParties.SeedVoidovia(Map, Rng);
 
             Act1Quest.Log += msg => Debug.Log($"[Quest] {msg}");
             Act1Quest.LairSpawnRequested += (node, road) =>
             {
                 if (Map.TryGetNode(node.parentSettlementId, out var parent))
-                {
                     node.mapPosition = parent.mapPosition + new Vector2(0.6f, -0.4f);
-                }
-
                 Map.AddTemporaryNode(node, road);
             };
         }
@@ -103,12 +116,17 @@ namespace Voidovia
             Party.troops.Clear();
             Party.food.Clear();
             Party.inventory.Clear();
+            Party.powerCards.Clear();
             Party.companionIds.Clear();
+            Party.equippedWeaponId = null;
+            Party.equippedArmourId = null;
             foreach (var troopId in troopIds)
                 AddTroop(troopId, 1);
 
             Party.food.Add(new InventoryStack { itemId = "grain", count = 8 });
             Party.food.Add(new InventoryStack { itemId = "bread", count = 4 });
+            Party.AddInventory("serviceable_sword", 1);
+            Party.AddInventory("leather_jack", 1);
             Party.companionIds.Add("bangkok_kuo");
             Party.relations[FactionId.Voidovia] = 0;
             Party.reputation = ReputationFlag.Good;
@@ -159,5 +177,14 @@ namespace Voidovia
 
         public int RollMercenaryPurse() =>
             Rng.Next(GameConstants.LordVoidMercenaryPurseMin, GameConstants.LordVoidMercenaryPurseMax + 1);
+
+        public Vector2 PlayerMapPosition()
+        {
+            if (Journey.IsActive)
+                return Journey.CurrentMapPos;
+            if (Map.TryGetNode(Party.currentNodeId, out var n))
+                return n.mapPosition;
+            return Vector2.zero;
+        }
     }
 }

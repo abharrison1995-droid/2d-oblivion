@@ -23,6 +23,9 @@ namespace Voidovia
         public float weight = 1f;
         public bool unsellable;
         public string quality = "serviceable";
+        public EquipSlot equipSlot = EquipSlot.None;
+        public int combatBonus;
+        public int armourBonus;
     }
 
     [Serializable]

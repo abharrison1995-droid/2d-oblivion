@@ -41,6 +41,13 @@ namespace Voidovia
         Quest
     }
 
+    public enum EquipSlot
+    {
+        None,
+        Weapon,
+        Armour
+    }
+
     public enum BuildingType
     {
         GovernorsGrotto,

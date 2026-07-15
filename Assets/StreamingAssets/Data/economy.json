@@ -10,10 +10,12 @@
     { "id": "dried_fruit", "displayName": "Dried Fruit", "basePrice": 16, "fillPerUnit": 1.1, "moraleBonus": 1 }
   ],
   "items": [
-    { "id": "starter_stolen_heirloom", "displayName": "Stolen Heirloom", "type": 5, "baseValue": 0, "weight": 0.5, "unsellable": true, "quality": "quest" },
-    { "id": "loot_butter_trinket", "displayName": "Buttery Trinket", "type": 3, "baseValue": 45, "weight": 0.2, "unsellable": false, "quality": "crude" },
-    { "id": "serviceable_sword", "displayName": "Serviceable Sword", "type": 0, "baseValue": 120, "weight": 1.5, "unsellable": false, "quality": "serviceable" },
-    { "id": "leather_jack", "displayName": "Leather Jack", "type": 1, "baseValue": 90, "weight": 2.0, "unsellable": false, "quality": "serviceable" },
-    { "id": "grain_trade", "displayName": "Sack of Grain", "type": 2, "baseValue": 25, "weight": 3.0, "unsellable": false, "quality": "serviceable" }
+    { "id": "starter_stolen_heirloom", "displayName": "Stolen Heirloom", "type": 5, "baseValue": 0, "weight": 0.5, "unsellable": true, "quality": "quest", "equipSlot": 0, "combatBonus": 0, "armourBonus": 0 },
+    { "id": "loot_butter_trinket", "displayName": "Buttery Trinket", "type": 3, "baseValue": 45, "weight": 0.2, "unsellable": false, "quality": "crude", "equipSlot": 0, "combatBonus": 0, "armourBonus": 0 },
+    { "id": "serviceable_sword", "displayName": "Serviceable Sword", "type": 0, "baseValue": 120, "weight": 1.5, "unsellable": false, "quality": "serviceable", "equipSlot": 1, "combatBonus": 2, "armourBonus": 0 },
+    { "id": "leather_jack", "displayName": "Leather Jack", "type": 1, "baseValue": 90, "weight": 2.0, "unsellable": false, "quality": "serviceable", "equipSlot": 2, "combatBonus": 0, "armourBonus": 2 },
+    { "id": "grain_trade", "displayName": "Sack of Grain", "type": 2, "baseValue": 25, "weight": 3.0, "unsellable": false, "quality": "serviceable", "equipSlot": 0, "combatBonus": 0, "armourBonus": 0 },
+    { "id": "fine_blade", "displayName": "Fine Blade", "type": 0, "baseValue": 280, "weight": 1.6, "unsellable": false, "quality": "fine", "equipSlot": 1, "combatBonus": 4, "armourBonus": 0 },
+    { "id": "mail_shirt", "displayName": "Mail Shirt", "type": 1, "baseValue": 320, "weight": 4.0, "unsellable": false, "quality": "fine", "equipSlot": 2, "combatBonus": 0, "armourBonus": 5 }
   ]
 }

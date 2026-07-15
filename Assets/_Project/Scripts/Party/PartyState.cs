@@ -18,7 +18,7 @@ namespace Voidovia
     }
 
     /// <summary>
-    /// Player warband runtime state: men, food, gold, location.
+    /// Player warband runtime state: men, food, gold, location, gear.
     /// </summary>
     public class PartyState
     {
@@ -29,7 +29,9 @@ namespace Voidovia
         public List<TroopStack> troops = new();
         public List<InventoryStack> inventory = new();
         public List<InventoryStack> food = new();
-        public List<InventoryStack> powerCards = new(); // war treatise / power cards
+        public List<InventoryStack> powerCards = new();
+        public string equippedWeaponId;
+        public string equippedArmourId;
         public List<string> companionIds = new();
         public List<string> prisoners = new();
         public Dictionary<FactionId, int> relations = new();
@@ -47,6 +49,52 @@ namespace Voidovia
                     n += t.count;
                 return n;
             }
+        }
+
+        public void AddInventory(string itemId, int count = 1)
+        {
+            foreach (var s in inventory)
+            {
+                if (s.itemId != itemId) continue;
+                s.count += count;
+                return;
+            }
+
+            inventory.Add(new InventoryStack { itemId = itemId, count = count });
+        }
+
+        public bool TryEquip(string itemId, EquipSlot slot, out string unequippedId)
+        {
+            unequippedId = null;
+            InventoryStack found = null;
+            foreach (var s in inventory)
+            {
+                if (s.itemId == itemId && s.count > 0)
+                {
+                    found = s;
+                    break;
+                }
+            }
+
+            if (found == null) return false;
+
+            if (slot == EquipSlot.Weapon)
+            {
+                unequippedId = equippedWeaponId;
+                equippedWeaponId = itemId;
+            }
+            else if (slot == EquipSlot.Armour)
+            {
+                unequippedId = equippedArmourId;
+                equippedArmourId = itemId;
+            }
+            else return false;
+
+            found.count--;
+            if (found.count <= 0) inventory.Remove(found);
+            if (!string.IsNullOrEmpty(unequippedId))
+                AddInventory(unequippedId, 1);
+            return true;
         }
 
         public bool HasPowerCard(string cardId)
