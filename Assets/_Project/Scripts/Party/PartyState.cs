@@ -29,6 +29,7 @@ namespace Voidovia
         public List<TroopStack> troops = new();
         public List<InventoryStack> inventory = new();
         public List<InventoryStack> food = new();
+        public List<InventoryStack> powerCards = new(); // war treatise / power cards
         public List<string> companionIds = new();
         public List<string> prisoners = new();
         public Dictionary<FactionId, int> relations = new();
@@ -46,6 +47,34 @@ namespace Voidovia
                     n += t.count;
                 return n;
             }
+        }
+
+        public bool HasPowerCard(string cardId)
+        {
+            foreach (var s in powerCards)
+                if (s.itemId == cardId && s.count > 0)
+                    return true;
+            return false;
+        }
+
+        public void AddPowerCard(string cardId, int count = 1)
+        {
+            foreach (var s in powerCards)
+            {
+                if (s.itemId != cardId) continue;
+                s.count += count;
+                return;
+            }
+
+            powerCards.Add(new InventoryStack { itemId = cardId, count = count });
+        }
+
+        public bool TryBuyPowerCard(string cardId, int price)
+        {
+            if (gold < price) return false;
+            gold -= price;
+            AddPowerCard(cardId);
+            return true;
         }
 
         public void AddRelation(FactionId faction, int delta)

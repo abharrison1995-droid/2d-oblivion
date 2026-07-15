@@ -47,8 +47,9 @@ namespace Voidovia
             var map = DataLoader.LoadJson<WorldMapData>("voidovia_map.json");
             var troops = DataLoader.LoadJson<TroopRosterData>("troops.json");
             var catalog = DataLoader.LoadJson<EconomyCatalog>("economy.json");
-            GameState.Instance.BindData(map, troops, catalog);
-            Debug.Log($"[AppFlow] Loaded {map.nodes.Length} nodes / {map.roads.Length} roads");
+            var cards = DataLoader.LoadJson<BattleCardCatalogData>("battle_cards.json");
+            GameState.Instance.BindData(map, troops, catalog, cards);
+            Debug.Log($"[AppFlow] Loaded {map.nodes.Length} nodes / {cards.cards.Length} battle cards");
         }
     }
 }

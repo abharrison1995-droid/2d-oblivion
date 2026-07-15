@@ -21,6 +21,7 @@ namespace Voidovia
 
         public TroopRosterData TroopRoster { get; private set; }
         public EconomyCatalog Catalog { get; private set; }
+        public BattleCardCatalogData CardCatalog { get; private set; }
         public System.Random Rng { get; private set; } = new();
 
         void Awake()
@@ -43,13 +44,16 @@ namespace Voidovia
             Act1Quest = new StolenItemQuestController();
         }
 
-        public void BindData(WorldMapData map, TroopRosterData troops, EconomyCatalog catalog)
+        public void BindData(WorldMapData map, TroopRosterData troops, EconomyCatalog catalog, BattleCardCatalogData cards = null)
         {
             TroopRoster = troops;
             Catalog = catalog;
+            CardCatalog = cards;
             Map.Load(map);
             Economy.LoadFood(catalog.foods);
             Economy.LoadTroops(troops.troops);
+            if (cards?.cards != null)
+                Battle.LoadCatalog(cards.cards);
 
             Act1Quest.Log += msg => Debug.Log($"[Quest] {msg}");
             Act1Quest.LairSpawnRequested += (node, road) =>

@@ -16,6 +16,7 @@ namespace Voidovia
         public bool hasStore;
         public bool hasTavern;
         public bool hasRecruitment;
+        public bool hasBookStore;
         /// <summary>
         /// Visible on the strategic map, but deep content comes later.
         /// </summary>

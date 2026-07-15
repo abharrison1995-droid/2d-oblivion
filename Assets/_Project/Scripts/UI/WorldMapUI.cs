@@ -92,9 +92,10 @@ namespace Voidovia
             bodyRt.anchorMin = new Vector2(0f, 0.28f);
             bodyRt.anchorMax = new Vector2(0.62f, 0.72f);
 
-            UiFactory.Button(bottom, "TravelBtn", "Travel here", new Vector2(0.64f, 0.55f), new Vector2(0.98f, 0.88f), TravelToSelected);
-            UiFactory.Button(bottom, "AdvisorBtn", "Ask advisor", new Vector2(0.64f, 0.28f), new Vector2(0.98f, 0.52f), AskAdvisor);
-            UiFactory.Button(bottom, "QuestBtn", "Quest action", new Vector2(0.64f, 0.05f), new Vector2(0.98f, 0.25f), QuestAction);
+            UiFactory.Button(bottom, "TravelBtn", "Travel here", new Vector2(0.64f, 0.70f), new Vector2(0.98f, 0.92f), TravelToSelected);
+            UiFactory.Button(bottom, "AdvisorBtn", "Ask advisor", new Vector2(0.64f, 0.48f), new Vector2(0.98f, 0.68f), AskAdvisor);
+            UiFactory.Button(bottom, "BooksBtn", "Book store", new Vector2(0.64f, 0.26f), new Vector2(0.98f, 0.46f), OpenBooks);
+            UiFactory.Button(bottom, "QuestBtn", "Quest action", new Vector2(0.64f, 0.04f), new Vector2(0.98f, 0.24f), QuestAction);
 
             _logText = UiFactory.Label(bottom, "Log", "", 18, TextAnchor.LowerLeft, new Color(0.65f, 0.7f, 0.68f));
             var logRt = _logText.GetComponent<RectTransform>();
@@ -274,6 +275,7 @@ namespace Voidovia
             if (node.hasStore) services += "Store ";
             if (node.hasTavern) services += "Tavern ";
             if (node.hasRecruitment) services += "Recruit ";
+            if (node.hasBookStore) services += "BookStore ";
 
             _inspectBody.text =
                 $"{node.type} · {faction}\n" +
@@ -349,6 +351,26 @@ namespace Voidovia
             }
         }
 
+        void OpenBooks()
+        {
+            var g = GameState.Instance;
+            if (!g.Map.TryGetNode(g.Party.currentNodeId, out var node) || !node.hasBookStore)
+            {
+                AppendLog("No Book Store here. Greyledger keeps the expensive treatises.");
+                return;
+            }
+
+            var books = FindObjectOfType<BookStoreUI>();
+            if (books == null)
+            {
+                var go = new GameObject("BookStoreUI");
+                books = go.AddComponent<BookStoreUI>();
+                DontDestroyOnLoad(go);
+            }
+
+            books.Open(() => RefreshHud());
+        }
+
         void AskAdvisor()
         {
             var g = GameState.Instance;
@@ -370,6 +392,8 @@ namespace Voidovia
                 FindObjectOfType<BattleUI>()?.BeginLairBattle(outcome =>
                 {
                     g.Act1Quest.TryCompleteLairRaid(outcome, g.Party);
+                    foreach (var cardId in outcome.rewardPowerCardIds)
+                        AppendLog($"Chief's treatise claimed: {cardId}");
                     AppendLog(outcome.summary);
                     RefreshHud();
                 });
