@@ -33,6 +33,26 @@ namespace Voidovia
             };
         }
 
+        /// <summary>A mixed Void patrol — proper soldiers, not rabble. A win captures Voidovia troops
+        /// (recruitable into the Void tree).</summary>
+        public static BattleForce VoidoviaPatrol(System.Random rng)
+        {
+            var militia = rng.Next(4, 7);
+            var trained = rng.Next(1, 4);
+            var archers = rng.Next(1, 3);
+            return new BattleForce
+            {
+                name = "Voidovia Patrol",
+                faction = FactionId.Voidovia,
+                troops = new List<TroopStack>
+                {
+                    new() { troopId = "void_militia", count = militia },
+                    new() { troopId = "trained_void_militia", count = trained },
+                    new() { troopId = "void_archer", count = archers }
+                }
+            };
+        }
+
         public static BattleForce Encounter(TravelEncounterKind kind, System.Random rng) => kind switch
         {
             TravelEncounterKind.MinorThieves => new BattleForce
@@ -40,6 +60,16 @@ namespace Voidovia
                 name = "Footpads",
                 faction = FactionId.ButterKlanBoys,
                 troops = new List<TroopStack> { new() { troopId = "butter_thug", count = rng.Next(2, 5) } }
+            },
+            TravelEncounterKind.Trader => new BattleForce
+            {
+                name = "Caravan guards",
+                faction = FactionId.Traders,
+                troops = new List<TroopStack>
+                {
+                    new() { troopId = "void_militia", count = rng.Next(2, 5) },
+                    new() { troopId = "void_archer", count = rng.Next(1, 3) }
+                }
             },
             TravelEncounterKind.BanditAmbush => RollAmbush(rng),
             TravelEncounterKind.ButterRaid => new BattleForce

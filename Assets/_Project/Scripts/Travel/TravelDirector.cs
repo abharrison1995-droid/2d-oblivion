@@ -13,7 +13,8 @@ namespace Voidovia
         Refugees,
         Weather,
         BanditAmbush,
-        ButterRaid // locked until later game
+        ButterRaid, // locked until later game
+        VoidoviaPatrol // hunts the player while Wanted in Voidovia
     }
 
     [Serializable]
@@ -31,6 +32,12 @@ namespace Voidovia
         /// <summary>Rolled once when the encounter is generated so the pre-fight surrender/count
         /// preview and the actual battle use the same force instead of rolling twice.</summary>
         public BattleForce cachedForce;
+
+        /// <summary>Caravan cargo (Trader encounters): the coin and trade goods you'd loot by raiding, or
+        /// the goods offered when you trade peacefully. Rolled once at generation.</summary>
+        public int caravanGold;
+        public string caravanGoodId;
+        public int caravanGoodCount;
     }
 
     /// <summary>
@@ -94,8 +101,19 @@ namespace Voidovia
             var kind = LightTable[rng.Next(LightTable.Length)];
             var encounter = Build(kind);
             encounter.cachedForce = BattleForceTables.Encounter(kind, rng);
+            ApplyCaravanCargo(encounter, rng);
             ApplyBanditFriendliness(encounter);
             return encounter;
+        }
+
+        /// <summary>Fills a caravan's cargo (coin + trade goods). Cargo scales up a little so a raid can be
+        /// a real payday — at the cost of the infamy that comes with robbing the realm's roads.</summary>
+        static void ApplyCaravanCargo(TravelEncounter e, System.Random rng)
+        {
+            if (e.kind != TravelEncounterKind.Trader) return;
+            e.caravanGold = rng.Next(40, 121);
+            e.caravanGoodId = "grain_trade";
+            e.caravanGoodCount = rng.Next(2, 5);
         }
 
         /// <summary>Rolled for off-path steps instead of RollEncounter — same danger gate, hostile-biased table.</summary>
@@ -113,6 +131,23 @@ namespace Voidovia
             encounter.cachedForce = BattleForceTables.Encounter(kind, rng);
             ApplyBanditFriendliness(encounter);
             return encounter;
+        }
+
+        /// <summary>A Voidovia patrol that runs down a wanted outlaw. Fight them (and darken your name
+        /// further), bribe past, or run. Fielded with real Void troops, so a win captures Void soldiers.</summary>
+        public TravelEncounter RollWantedPatrol(System.Random rng)
+        {
+            return new TravelEncounter
+            {
+                kind = TravelEncounterKind.VoidoviaPatrol,
+                title = "Voidovia patrol",
+                body = "Lord Void's riders wheel across the road — they have your description. \"Stand and answer for your crimes, outlaw.\"",
+                canFight = true,
+                canFlee = true,
+                canTalk = false,
+                canPay = true,
+                cachedForce = BattleForceTables.VoidoviaPatrol(rng)
+            };
         }
 
         static void ApplyBanditFriendliness(TravelEncounter e)
@@ -163,8 +198,10 @@ namespace Voidovia
             TravelEncounterKind.Trader => new TravelEncounter
             {
                 kind = kind,
-                title = "Merchant train",
-                body = "Oxen, cloth, and gossip from Voi-D-Nee.",
+                title = "Merchant caravan",
+                body = "Oxen, cloth, and coin bound between markets, a few hired guards riding alongside. Trade with them — or take it all.",
+                canFight = true, // raid the caravan (fight its guards)
+                canFlee = true,
                 canTalk = true,
                 canPay = true
             },

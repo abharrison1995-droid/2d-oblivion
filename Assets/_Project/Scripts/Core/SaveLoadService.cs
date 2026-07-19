@@ -11,6 +11,7 @@ namespace Voidovia
         public string displayName;
         public int culture;
         public float prosperity = 50f;
+        public int notableRelation = GameConstants.NotableRelationBaseline;
         public BuildingState[] buildings = System.Array.Empty<BuildingState>();
     }
 
@@ -38,6 +39,7 @@ namespace Voidovia
         public string weapon;
         public string armour;
         public int reputation;
+        public int bounty;
         public int questBeat;
         public string correctCityId;
         public string invJson;
@@ -72,8 +74,10 @@ namespace Voidovia
         /// v3 → v4: added warsJson (faction war matrix). Empty on an old save falls back to the seeded
         /// starting wars, matching a fresh campaign.
         /// v4 → v5: added ownershipJson (settlement control after captures). Empty on an old save leaves
-        /// the map's authored owners untouched.</summary>
-        public const int CurrentSaveVersion = 5;
+        /// the map's authored owners untouched.
+        /// v5 → v6: added settlement notableRelation and Wanted-in-Voidovia bounty. Both default to their
+        /// baselines on an old save.</summary>
+        public const int CurrentSaveVersion = 6;
 
         public static string Path => System.IO.Path.Combine(Application.persistentDataPath, FileName);
 
@@ -106,6 +110,7 @@ namespace Voidovia
                 weapon = g.Party.equippedWeaponId,
                 armour = g.Party.equippedArmourId,
                 reputation = (int)g.Party.reputation,
+                bounty = g.Party.bounty,
                 questBeat = (int)g.Act1Quest.Beat,
                 correctCityId = g.Act1Quest.CorrectCityId
             };
@@ -159,6 +164,7 @@ namespace Voidovia
             g.Party.equippedWeaponId = s.weapon;
             g.Party.equippedArmourId = s.armour;
             g.Party.reputation = (ReputationFlag)s.reputation;
+            g.Party.SetBounty(s.bounty); // keeps the WantedInVoidovia flag consistent with the amount
             g.Party.inventory.Clear();
             g.Party.food.Clear();
             g.Party.troops.Clear();
@@ -424,6 +430,7 @@ namespace Voidovia
                     displayName = kv.Value.displayName,
                     culture = (int)kv.Value.culture,
                     prosperity = kv.Value.prosperity,
+                    notableRelation = kv.Value.notableRelation,
                     buildings = buildings
                 };
             }
@@ -485,7 +492,8 @@ namespace Voidovia
                 var settlement = new SettlementState(entry.nodeId, entry.displayName)
                 {
                     culture = (FactionId)entry.culture,
-                    prosperity = entry.prosperity <= 0f ? 50f : entry.prosperity
+                    prosperity = entry.prosperity <= 0f ? 50f : entry.prosperity,
+                    notableRelation = entry.notableRelation <= 0 ? GameConstants.NotableRelationBaseline : entry.notableRelation
                 };
                 foreach (var b in entry.buildings)
                     settlement.RestoreBuilding(b.type, b.tier, b.isBuilt);

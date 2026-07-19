@@ -95,7 +95,10 @@ namespace Voidovia
                     if (market.buyerGold > maxGold) market.buyerGold = maxGold;
                 }
 
-                var maxStock = Mathf.Max(1, Mathf.RoundToInt((market.isPeasant ? 8 : 15) * factor));
+                // A friendly notable brings more willing recruits; a wary one, few. (0.4× at zero regard → 1.4× at full.)
+                var notable = GameState.Instance?.NotableRelationOf(market.nodeId) ?? GameConstants.NotableRelationBaseline;
+                var notableFactor = GameConstants.NotableStockFactorMin + notable / 100f;
+                var maxStock = Mathf.Max(1, Mathf.RoundToInt((market.isPeasant ? 8 : 15) * factor * notableFactor));
                 if (market.recruitStock < maxStock)
                 {
                     market.recruitStock += rng.Next(1, 3);
@@ -150,15 +153,36 @@ namespace Voidovia
             return true;
         }
 
-        /// <summary>The actual T1 recruit's hireFee (from troops.json), adjusted by Trade — the
-        /// single source of truth so this can't drift from what SettlementUI's building-tier
-        /// recruiting charges for the same troop.</summary>
+        /// <summary>The troop this settlement actually offers: its base recruit, upgraded to the culture's
+        /// next tier once the local notable's regard clears the threshold (trust unlocks better men).</summary>
+        public string EffectiveRecruitTroopId(SettlementMarket market)
+        {
+            var baseId = market.recruitTroopId;
+            var gs = GameState.Instance;
+            if (gs?.TroopRoster == null) return baseId;
+            if (gs.NotableRelationOf(market.nodeId) < GameConstants.NotableUpgradeThreshold) return baseId;
+            return gs.TroopRoster.TryGet(baseId, out var def) && !string.IsNullOrEmpty(def.upgradesToId)
+                ? def.upgradesToId
+                : baseId;
+        }
+
+        static float NotableDiscount(string nodeId)
+        {
+            var rel = GameState.Instance?.NotableRelationOf(nodeId) ?? 0;
+            return Mathf.Clamp01(rel / 100f) * GameConstants.NotablePriceDiscountMax;
+        }
+
+        /// <summary>The effective recruit's hireFee (from troops.json), adjusted by Trade and the notable's
+        /// regard (a friendly notable hires men out cheaper).</summary>
         public int RecruitPrice(SettlementMarket market)
         {
+            var troopId = EffectiveRecruitTroopId(market);
             var baseFee = 10;
-            if (GameState.Instance?.TroopRoster != null && GameState.Instance.TroopRoster.TryGet(market.recruitTroopId, out var def))
+            if (GameState.Instance?.TroopRoster != null && GameState.Instance.TroopRoster.TryGet(troopId, out var def))
                 baseFee = def.hireFee;
-            return Mathf.Max(1, Mathf.RoundToInt(baseFee * HeroStatBonuses.TradeBuyMultiplier() * CompanionBonuses.RecruitPriceMultiplier()));
+            var mult = HeroStatBonuses.TradeBuyMultiplier() * CompanionBonuses.RecruitPriceMultiplier()
+                       * (1f - NotableDiscount(market.nodeId));
+            return Mathf.Max(1, Mathf.RoundToInt(baseFee * mult));
         }
 
         public bool TryRecruit(PartyState party, SettlementMarket market, out string log)
@@ -172,6 +196,7 @@ namespace Voidovia
             if (GameState.Instance != null && !GameState.Instance.CanRecruit(1, out log))
                 return false;
 
+            var troopId = EffectiveRecruitTroopId(market);
             var price = RecruitPrice(market);
             if (party.gold < price)
             {
@@ -182,8 +207,11 @@ namespace Voidovia
             party.gold -= price;
             market.buyerGold += price;
             market.recruitStock--;
-            AddTroop(party, market.recruitTroopId, 1);
-            log = $"Hired 1× {market.recruitTroopId} for {price}g. Stock {market.recruitStock}.";
+            AddTroop(party, troopId, 1);
+            var name = GameState.Instance?.TroopRoster != null && GameState.Instance.TroopRoster.TryGet(troopId, out var def)
+                ? def.displayName
+                : troopId;
+            log = $"Hired 1× {name} for {price}g. Stock {market.recruitStock}.";
             return true;
         }
 

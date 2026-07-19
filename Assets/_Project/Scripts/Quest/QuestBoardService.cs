@@ -51,6 +51,9 @@ namespace Voidovia
                 var q = _active[i];
                 if (today <= q.deadlineDay) continue;
                 q.state = QuestState.Expired;
+                // A broken promise sours the notable who trusted you with it.
+                if (map.TryGetNode(q.giverNodeId, out var giver))
+                    GameState.Instance?.AddNotableRelation(giver, -GameConstants.NotableDispleasureHit);
                 CleanupSpawnedNode(map, q);
                 _active.RemoveAt(i);
             }
@@ -342,7 +345,10 @@ namespace Voidovia
             inst.state = QuestState.Completed;
             g.Party.gold += inst.rewardGold;
             if (g.Map.TryGetNode(inst.giverNodeId, out var giver))
+            {
                 g.Party.AddRelation(giver.controllingFaction, GameConstants.QuestRelationReward);
+                g.AddNotableRelation(giver, GameConstants.QuestNotableReward); // the notable remembers a favour done
+            }
             QuestCompleted?.Invoke(inst);
         }
 

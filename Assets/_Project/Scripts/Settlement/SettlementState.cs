@@ -23,6 +23,9 @@ namespace Voidovia
         /// <summary>0–100 wealth/population. Raids sack it; peace slowly rebuilds it. Drives market
         /// purse depth and how many recruits a settlement can field. Baseline is 50.</summary>
         public float prosperity = 50f;
+        /// <summary>The local notable's (headman/elder) regard for the player, 0–100. Gates recruit
+        /// quantity, price, and quality. Raised by quests for this settlement; dropped by raiding it.</summary>
+        public int notableRelation = GameConstants.NotableRelationBaseline;
         public readonly Dictionary<BuildingType, BuildingState> buildings = new();
 
         public int GrottoTier => GetTier(BuildingType.GovernorsGrotto);
@@ -32,6 +35,13 @@ namespace Voidovia
             prosperity += delta;
             if (prosperity < 0f) prosperity = 0f;
             if (prosperity > 100f) prosperity = 100f;
+        }
+
+        public void AddNotableRelation(int delta)
+        {
+            notableRelation += delta;
+            if (notableRelation < 0) notableRelation = 0;
+            if (notableRelation > 100) notableRelation = 100;
         }
 
         public SettlementState(string nodeId, string displayName)

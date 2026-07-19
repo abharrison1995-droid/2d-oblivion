@@ -71,6 +71,9 @@ namespace Voidovia
         public List<PrisonerRecord> prisoners = new();
         public Dictionary<FactionId, int> relations = new();
         public ReputationFlag reputation = ReputationFlag.Good;
+        /// <summary>Gold owed to Voidovia for crimes. While &gt; 0 you're Wanted: patrols hunt you and you
+        /// must clear it at a Voidovia settlement. Kept in sync with the WantedInVoidovia flag.</summary>
+        public int bounty;
         public bool isVoidoviaMercenary;
         public bool isVoidoviaVassal;
         public bool ownsLand;
@@ -253,6 +256,18 @@ namespace Voidovia
 
             record = null;
             return false;
+        }
+
+        public bool IsWantedInVoidovia => bounty > 0;
+
+        /// <summary>Set the Voidovia bounty and keep the WantedInVoidovia reputation flag in sync.</summary>
+        public void SetBounty(int amount)
+        {
+            bounty = Math.Max(0, amount);
+            if (bounty > 0)
+                reputation |= ReputationFlag.WantedInVoidovia;
+            else
+                reputation &= ~ReputationFlag.WantedInVoidovia;
         }
 
         public void AddRelation(FactionId faction, int delta)

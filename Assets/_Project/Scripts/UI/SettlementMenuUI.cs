@@ -85,6 +85,26 @@ namespace Voidovia
                 AddNomadHire(g, actions, "nomad_skirmisher");
             }
 
+            // Clear your name where Voidovia holds sway.
+            if (node.controllingFaction == FactionId.Voidovia && g.Party.IsWantedInVoidovia)
+                actions.Add(($"Pay off bounty ({g.Party.bounty}g)", () =>
+                {
+                    var p = g.Party;
+                    var paid = Mathf.Min(p.gold, p.bounty);
+                    if (paid <= 0)
+                    {
+                        _log?.Invoke("You haven't the coin to pay anything toward your bounty.");
+                        return;
+                    }
+
+                    p.gold -= paid;
+                    p.SetBounty(p.bounty - paid);
+                    _log?.Invoke(p.bounty > 0
+                        ? $"You pay {paid}g toward your bounty — {p.bounty}g still hangs over your head."
+                        : $"You pay {paid}g and clear your name. Voidovia's patrols will let you be.");
+                    Close();
+                }));
+
             if (nodeId == "greyledger")
                 actions.Add(("Advisor", () =>
                 {

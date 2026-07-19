@@ -100,8 +100,12 @@ namespace Voidovia
             var y = 0.96f;
             if (node.hasRecruitment || node.type == NodeType.Village)
             {
+                var effId = g.Market.EffectiveRecruitTroopId(market);
+                var effName = g.TroopRoster != null && g.TroopRoster.TryGet(effId, out var edef) ? edef.displayName : effId;
+                var regard = g.NotableRelationOf(node.id);
                 var (rTop, rBottom) = UiFactory.NextRow(ref y, 0.12f, 0.02f);
-                UiFactory.Button(_list, "Recruit", $"Recruit 1× {market.recruitTroopId} ({g.Market.RecruitPrice(market)}g)",
+                UiFactory.Button(_list, "Recruit",
+                    $"Recruit 1× {effName} ({g.Market.RecruitPrice(market)}g) · {market.recruitStock} left · notable regard {regard}/100",
                     new Vector2(0f, rBottom), new Vector2(1f, rTop), () =>
                     {
                         g.Market.TryRecruit(g.Party, market, out var log);

@@ -148,11 +148,32 @@ namespace Voidovia
         public float ProsperityOf(string nodeId) =>
             Settlements.TryGetValue(nodeId, out var s) ? s.prosperity : GameConstants.ProsperityBaseline;
 
+        /// <summary>The local notable's regard for the player at a settlement (baseline if unvisited).</summary>
+        public int NotableRelationOf(string nodeId) =>
+            Settlements.TryGetValue(nodeId, out var s) ? s.notableRelation : GameConstants.NotableRelationBaseline;
+
+        /// <summary>Shift a settlement's notable regard (creates its state if needed). Used by quest
+        /// completion (up) and raiding (down).</summary>
+        public void AddNotableRelation(MapNodeData node, int delta) =>
+            GetOrCreateSettlement(node).AddNotableRelation(delta);
+
         void RecoverProsperityDaily()
         {
             foreach (var s in Settlements.Values)
                 if (s.prosperity < GameConstants.ProsperityBaseline)
                     s.AddProsperity(GameConstants.ProsperityDailyRecovery);
+        }
+
+        /// <summary>Falling far enough out of Voidovia's favour outlaws you — a bounty lands and the flag
+        /// is set. (Clearing it is a deliberate act: pay it off at a Voidovia settlement.)</summary>
+        void CheckWantedStatus()
+        {
+            if (Party.bounty > 0) return;
+            if (Party.GetRelation(FactionId.Voidovia) > GameConstants.WantedRelationThreshold) return;
+
+            Party.SetBounty(GameConstants.WantedStartingBounty);
+            PendingNotifications.Add(
+                $"You are now WANTED in Voidovia — a {Party.bounty}g bounty on your head. Patrols will hunt the roads for you; pay it off at a Voidovia settlement to clear your name.");
         }
 
         public SettlementState GetOrCreateSettlement(MapNodeData node)
@@ -211,7 +232,7 @@ namespace Voidovia
             Party.relations[FactionId.Voidovia] = 0;
             Party.reputation = ReputationFlag.Good;
             if (wantedLean)
-                Party.reputation |= ReputationFlag.WantedInVoidovia;
+                Party.SetBounty(GameConstants.WantedStartingBounty);
         }
 
         /// <summary>Max men the warband can hold: base + Leadership × per-point. Makes Leadership a
@@ -377,6 +398,7 @@ namespace Voidovia
             TickFactionDynamics();
             WorldParties.OnNewDay();
             RecoverProsperityDaily();
+            CheckWantedStatus();
             Party.warbandExperience += Hero.WarbandExperienceDailyGain();
             ResolveTrainingCompletions();
             RecoverWoundedDaily();

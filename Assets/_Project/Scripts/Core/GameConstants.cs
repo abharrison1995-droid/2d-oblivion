@@ -26,6 +26,16 @@ namespace Voidovia
         // blocking vassalage via PartyState.CanBecomeVassal.
         public const int InfamyRelationThreshold = -50;
 
+        // Wanted status / bounty. Falling to WantedRelationThreshold with Voidovia outlaws you: a bounty
+        // lands on your head, patrols hunt you on the road (chance scales with the bounty), and you must
+        // pay it off at a Voidovia settlement to clear your name. Infamy also raises general road danger.
+        public const int WantedRelationThreshold = -20;
+        public const int WantedStartingBounty = 120;
+        public const float WantedPatrolBaseChance = 0.12f;
+        public const float WantedPatrolChancePerBounty = 0.0006f; // ×bounty, added to the base
+        public const int PatrolBribeCost = 45;
+        public const float InfamousDangerBonus = 0.12f; // added to road event chance while Infamous
+
         public const int OriginBackgroundCount = 4;
 
         // Upgrade cost bands — spent in BOTH gold and Warband Experience (same numbers,
@@ -171,5 +181,15 @@ namespace Voidovia
         public const int QuestLevyCountMax = 5;
         public const float QuestEscortAmbushChance = 0.35f;
         public const int QuestRelationReward = 4; // relation bump with the giver's controlling faction on completion
+
+        // Settlement notables: each settlement's headman/elder has a regard for you (0–100). Higher regard
+        // means more willing recruits, a price discount, and — past the upgrade threshold — the settlement
+        // fields its culture's next tier. Quests for that settlement raise it; a failed/expired quest drops it.
+        public const int NotableRelationBaseline = 25;
+        public const int QuestNotableReward = 12;
+        public const int NotableUpgradeThreshold = 60; // regard at/above which the settlement offers its T2 recruit
+        public const float NotablePriceDiscountMax = 0.3f; // up to 30% off recruits at full regard
+        public const float NotableStockFactorMin = 0.4f; // recruit-stock multiplier at zero regard (→ ~1.4 at full)
+        public const int NotableDispleasureHit = 15; // regard lost when a quest for the settlement fails/expires
     }
 }

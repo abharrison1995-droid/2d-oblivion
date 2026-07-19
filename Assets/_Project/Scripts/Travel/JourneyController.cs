@@ -59,6 +59,8 @@ namespace Voidovia
             chance *= 1f - Mathf.Clamp((scouting - 5) * 0.04f, -0.2f, 0.25f);
             if (step.isOffPath)
                 chance += 0.18f; // no maintained road — remote ground draws more trouble
+            if ((party.reputation & ReputationFlag.Infamous) != 0)
+                chance += GameConstants.InfamousDangerBonus; // a notorious band attracts trouble
             return Mathf.Clamp01(chance);
         }
 
@@ -214,6 +216,15 @@ namespace Voidovia
                     : travel.RollEncounter(edgeForRoll, rng);
             }
 
+            // A wanted outlaw draws Voidovia patrols on maintained roads — odds climb with the bounty.
+            if (encounter.kind == TravelEncounterKind.None && !step.isOffPath && party.IsWantedInVoidovia)
+            {
+                var patrolChance = Mathf.Clamp01(
+                    GameConstants.WantedPatrolBaseChance + party.bounty * GameConstants.WantedPatrolChancePerBounty);
+                if (rng.NextDouble() < patrolChance)
+                    encounter = travel.RollWantedPatrol(rng);
+            }
+
             StepIndex++;
             if (step.arrivesAtNode && !string.IsNullOrEmpty(step.arriveNodeId))
                 party.currentNodeId = step.arriveNodeId;
@@ -252,6 +263,7 @@ namespace Voidovia
                 TravelEncounterKind.MinorThieves => 0.85f,
                 TravelEncounterKind.BanditAmbush => 0.6f,
                 TravelEncounterKind.ButterRaid => 0.4f,
+                TravelEncounterKind.VoidoviaPatrol => 0.5f,
                 _ => 1f
             };
             var mountRatio = MountRatio(party, roster);

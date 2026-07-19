@@ -18,6 +18,7 @@ namespace Voidovia
             TravelEncounterKind.Weather => new Color(0.42f, 0.55f, 0.68f),
             TravelEncounterKind.BanditAmbush => new Color(0.72f, 0.24f, 0.2f),
             TravelEncounterKind.ButterRaid => new Color(0.5f, 0.12f, 0.14f),
+            TravelEncounterKind.VoidoviaPatrol => new Color(0.35f, 0.4f, 0.62f),
             _ => new Color(0.45f, 0.45f, 0.45f)
         };
 
@@ -33,6 +34,7 @@ namespace Voidovia
             TravelEncounterKind.Weather => "WX",
             TravelEncounterKind.BanditAmbush => "AM",
             TravelEncounterKind.ButterRaid => "BR",
+            TravelEncounterKind.VoidoviaPatrol => "VP",
             _ => "??"
         };
     }

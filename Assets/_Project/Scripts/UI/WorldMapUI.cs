@@ -543,6 +543,11 @@ namespace Voidovia
                 var mood = prosperity >= 65f ? "thriving" : prosperity >= 40f ? "steady" : prosperity >= 20f ? "struggling" : "sacked";
                 prosperityLine = $"\nProsperity: {prosperity:0}% ({mood})";
 
+                var regard = g.NotableRelationOf(node.id);
+                var regardMood = regard >= GameConstants.NotableUpgradeThreshold ? "trusts you — offers better recruits"
+                    : regard >= 35 ? "cordial" : regard >= 15 ? "wary" : "cold";
+                prosperityLine += $"\nNotable regard: {regard}/100 ({regardMood})";
+
                 var enemies = g.Diplomacy.EnemiesOf(node.controllingFaction);
                 if (enemies.Count > 0)
                 {
@@ -773,7 +778,9 @@ namespace Voidovia
             UiFactory.IconBox(_encounterIconSlot, "Icon", Vector2.zero, Vector2.one,
                 EncounterVisuals.ResourcePath(encounter.kind), accent, EncounterVisuals.Abbrev(encounter.kind));
 
+            var isCaravan = encounter.kind == TravelEncounterKind.Trader;
             _fightBtn.gameObject.SetActive(encounter.canFight);
+            _fightBtn.GetComponentInChildren<Text>().text = isCaravan ? "Raid" : "Fight";
             _fleeBtn.gameObject.SetActive(encounter.canFlee);
             var showTalk = encounter.canTalk || encounter.canPay;
             _talkBtn.gameObject.SetActive(showTalk);
@@ -781,7 +788,9 @@ namespace Voidovia
             {
                 var cost = encounter.friendlyBandits ? 0 : EncounterCost(encounter.kind);
                 var label = _talkBtn.GetComponentInChildren<Text>();
-                label.text = cost > 0 ? $"Pay {cost}g" : "Talk";
+                label.text = isCaravan
+                    ? (cost > 0 ? $"Trade {cost}g" : "Trade")
+                    : (cost > 0 ? $"Pay {cost}g" : "Talk");
             }
 
             var enemyCount = BattleUI.ForceCount(encounter.cachedForce ?? BattleUI.EncounterForce(encounter.kind));
@@ -798,12 +807,13 @@ namespace Voidovia
 
         static int EncounterCost(TravelEncounterKind kind) => kind switch
         {
-            TravelEncounterKind.Trader => 10,
+            TravelEncounterKind.Trader => 25,
             TravelEncounterKind.Healers => 10,
             TravelEncounterKind.Refugees => 6,
             TravelEncounterKind.MinorThieves => 10,
             TravelEncounterKind.BanditAmbush => 25,
             TravelEncounterKind.ButterRaid => 60,
+            TravelEncounterKind.VoidoviaPatrol => GameConstants.PatrolBribeCost,
             _ => 0
         };
 
@@ -897,10 +907,16 @@ namespace Voidovia
             switch (e.kind)
             {
                 case TravelEncounterKind.Trader:
-                    var loaves = Mathf.Max(2, g.Party.TotalMen / 4);
-                    g.Party.food.Add(new InventoryStack { itemId = "bread", count = loaves });
-                    g.Party.AddRelation(FactionId.Traders, 1);
-                    AppendLog($"Bought {loaves} bread from the trader.");
+                    if (paidInFull && !string.IsNullOrEmpty(e.caravanGoodId) && e.caravanGoodCount > 0)
+                    {
+                        g.Party.AddInventory(e.caravanGoodId, e.caravanGoodCount);
+                        g.Party.AddRelation(FactionId.Traders, 1);
+                        AppendLog($"You trade with the caravan — {e.caravanGoodCount}× trade goods for your saddlebags (resell them in a town).");
+                    }
+                    else
+                    {
+                        AppendLog("You hadn't the coin to trade in earnest.");
+                    }
                     break;
 
                 case TravelEncounterKind.Healers:
@@ -1011,6 +1027,36 @@ namespace Voidovia
                 : $"You're driven off by the {e.title}. {outcome.summary}");
             if (e.kind == TravelEncounterKind.ButterRaid && outcome.playerVictory)
                 GameState.Instance.Party.AddRelation(FactionId.ButterKlanBoys, -3);
+
+            if (e.kind == TravelEncounterKind.Trader && outcome.playerVictory)
+            {
+                var p = GameState.Instance.Party;
+                p.gold += e.caravanGold;
+                if (!string.IsNullOrEmpty(e.caravanGoodId) && e.caravanGoodCount > 0)
+                    p.AddInventory(e.caravanGoodId, e.caravanGoodCount);
+                p.AddRelation(FactionId.Traders, -8);
+                p.AddRelation(FactionId.Voidovia, -5); // banditry on the realm's roads darkens your name
+                AppendLog($"You plunder the caravan — {e.caravanGold}g and {e.caravanGoodCount}× trade goods. Word of the robbery spreads; Traders and Voidovia sour on you.");
+            }
+
+            if (e.kind == TravelEncounterKind.VoidoviaPatrol)
+            {
+                var p = GameState.Instance.Party;
+                if (outcome.playerVictory)
+                {
+                    p.AddRelation(FactionId.Voidovia, -5);
+                    AppendLog("You cut down Lord Void's men. Your name only darkens — the bounty stands.");
+                }
+                else
+                {
+                    var fine = Mathf.Min(p.gold, p.bounty);
+                    p.gold -= fine;
+                    p.SetBounty(p.bounty - fine);
+                    AppendLog(p.bounty > 0
+                        ? $"The patrol overpowers you. A {fine}g fine is taken, but {p.bounty}g of bounty remains."
+                        : $"The patrol overpowers you — but a {fine}g fine settles your debt. Your name is clear.");
+                }
+            }
 
             if (!outcome.playerVictory && e.kind == TravelEncounterKind.BanditAmbush)
             {
@@ -1270,8 +1316,9 @@ namespace Voidovia
             var days = need > 0.01f ? fill / need : 99f;
             var woundedTag = p.TotalWounded > 0 ? $" ({p.TotalWounded} wounded)" : "";
             var cap = GameState.Instance.MaxPartySize;
+            var wantedTag = p.IsWantedInVoidovia ? $" · WANTED {p.bounty}g" : "";
             _hud.text =
-                $"{GameState.Instance.Hero.name} · Day {p.day} · {p.gold}g · Food~{days:0.0}d · Wages {wages}/wk · {p.TotalMen}/{cap} men{woundedTag} · {p.currentNodeId}";
+                $"{GameState.Instance.Hero.name} · Day {p.day} · {p.gold}g · Food~{days:0.0}d · Wages {wages}/wk · {p.TotalMen}/{cap} men{woundedTag}{wantedTag} · {p.currentNodeId}";
             UpdatePlayerMarker();
             if (_booksBtn != null)
                 _booksBtn.gameObject.SetActive(GameState.Instance.Map.TryGetNode(p.currentNodeId, out var here) && here.hasBookStore);
