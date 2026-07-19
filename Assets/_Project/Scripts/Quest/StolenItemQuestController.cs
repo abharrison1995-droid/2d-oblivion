@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 
 namespace Voidovia
 {
@@ -14,14 +13,6 @@ namespace Voidovia
         LairRaided,
         ChiefCaptured,
         Completed
-    }
-
-    [Serializable]
-    public class QuestDefinition
-    {
-        public string id;
-        public string displayName;
-        public string[] beatIds = Array.Empty<string>();
     }
 
     /// <summary>
@@ -81,7 +72,7 @@ namespace Voidovia
         public void StartQuest()
         {
             Beat = StolenItemQuestBeat.QuestGiven;
-            Emit("A Buttery Chief's rogues stole your heirloom. Find someone in Greyledger who knows the road.");
+            Emit("A Buttery Chief's rogues stole your heirloom. Find someone in Lik-E-Leek who knows the road.");
         }
 
         public void SpeakToAdvisor()
@@ -120,6 +111,7 @@ namespace Voidovia
         {
             Beat = StolenItemQuestBeat.ExButterIntel;
             Emit($"Ex-Butter: \"The real hole is outside {Display(CorrectCityId)}. Newly dug. Fresh banners.\"");
+            AwardQuestXp(30);
             SpawnLair();
             return CorrectCityId;
         }
@@ -174,13 +166,14 @@ namespace Voidovia
                 return false;
             }
 
-            party.prisoners.Add(ButterChiefId);
+            party.AddPrisoner(ButterChiefId, "Buttery Chief", null, isLord: true, sourceFaction: FactionId.ButterKlanBoys);
             party.inventory.Add(new InventoryStack { itemId = StolenItemId, count = 1 });
             foreach (var loot in outcome.loot)
                 party.inventory.Add(loot);
 
             Beat = StolenItemQuestBeat.ChiefCaptured;
             Emit("Heirloom recovered. Buttery Chief taken alive — deliver him to Voidovia authority.");
+            AwardQuestXp(60);
             return true;
         }
 
@@ -189,17 +182,25 @@ namespace Voidovia
             if (Beat != StolenItemQuestBeat.ChiefCaptured)
                 return;
 
-            party.prisoners.Remove(ButterChiefId);
+            party.RemovePrisoner(ButterChiefId);
             party.AddRelation(FactionId.Voidovia, 15);
             Beat = StolenItemQuestBeat.Completed;
             Emit("Lord Void's men take the Chief. The Wide Eyed Beast will want a word.");
+            AwardQuestXp(150);
+        }
+
+        void AwardQuestXp(int amount)
+        {
+            if (GameState.Instance?.Hero == null) return;
+            foreach (var levelUp in GameState.Instance.Hero.AddXp(amount))
+                Emit(levelUp);
         }
 
         static string Display(string id) => id switch
         {
-            "ashpond" => "Ashpond",
+            "ashpond" => "Beef",
             "tollbar" => "Tollbar",
-            "greyledger" => "Greyledger",
+            "greyledger" => "Lik-E-Leek",
             _ => id
         };
 

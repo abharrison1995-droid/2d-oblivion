@@ -11,12 +11,16 @@ namespace Voidovia
     {
         static readonly Dictionary<string, Sprite> Cache = new();
 
-        public static Sprite Load(string portraitId)
+        public static Sprite Load(string portraitId) =>
+            string.IsNullOrEmpty(portraitId) ? null : LoadRaw("Portraits/" + portraitId);
+
+        /// <summary>Loads a sprite from any Resources path (e.g. "Encounters/weather"), not just Portraits/.</summary>
+        public static Sprite LoadRaw(string resourcePath)
         {
-            if (string.IsNullOrEmpty(portraitId)) return null;
-            if (Cache.TryGetValue(portraitId, out var cached)) return cached;
-            var sprite = Resources.Load<Sprite>("Portraits/" + portraitId);
-            Cache[portraitId] = sprite; // cache misses too, so a missing file isn't re-queried every call
+            if (string.IsNullOrEmpty(resourcePath)) return null;
+            if (Cache.TryGetValue(resourcePath, out var cached)) return cached;
+            var sprite = Resources.Load<Sprite>(resourcePath);
+            Cache[resourcePath] = sprite; // cache misses too, so a missing file isn't re-queried every call
             return sprite;
         }
 

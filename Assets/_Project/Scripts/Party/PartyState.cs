@@ -18,6 +18,34 @@ namespace Voidovia
     }
 
     /// <summary>
+    /// A captive held by the party: a named quest lord (delivered, not recruited/sold)
+    /// or a generic captive (bandit, etc.) who can be recruited, sold, or released.
+    /// </summary>
+    [Serializable]
+    public class PrisonerRecord
+    {
+        public string id;
+        public string displayName;
+        public string recruitTroopId; // null/empty when not recruitable (e.g. a named quest lord)
+        public int capturedDay;
+        public bool isLord;
+        public FactionId sourceFaction = FactionId.Bandits;
+    }
+
+    /// <summary>
+    /// Troops pulled from the fighting roster while they train up to the next tier.
+    /// Not available in battle until CompletesOnDay.
+    /// </summary>
+    [Serializable]
+    public class TrainingJob
+    {
+        public string sourceTroopId;
+        public string targetTroopId;
+        public int count;
+        public int completesOnDay;
+    }
+
+    /// <summary>
     /// Player warband runtime state: men, food, gold, location, gear.
     /// </summary>
     public class PartyState
@@ -26,19 +54,28 @@ namespace Voidovia
         public int gold = 120;
         public float hours = 8f;
         public int day = 1;
+        public float morale = 50f;
+        public float fractionalFoodFill = 0f;
+        public int warbandExperience;
         public List<TroopStack> troops = new();
+        /// <summary>Men wounded in battle: they occupy the warband but can't fight, and recover back
+        /// into <see cref="troops"/> over time (faster resting in a settlement). See GameState recovery.</summary>
+        public List<TroopStack> wounded = new();
+        public List<TrainingJob> trainingJobs = new();
         public List<InventoryStack> inventory = new();
         public List<InventoryStack> food = new();
         public List<InventoryStack> powerCards = new();
         public string equippedWeaponId;
         public string equippedArmourId;
         public List<string> companionIds = new();
-        public List<string> prisoners = new();
+        public List<PrisonerRecord> prisoners = new();
         public Dictionary<FactionId, int> relations = new();
         public ReputationFlag reputation = ReputationFlag.Good;
         public bool isVoidoviaMercenary;
         public bool isVoidoviaVassal;
         public bool ownsLand;
+        public bool firstBountyHuntDone;
+        public bool firstTroopLevyDone;
 
         public int TotalMen
         {
@@ -49,6 +86,31 @@ namespace Voidovia
                     n += t.count;
                 return n;
             }
+        }
+
+        public int TotalWounded
+        {
+            get
+            {
+                var n = 0;
+                foreach (var w in wounded)
+                    n += w.count;
+                return n;
+            }
+        }
+
+        /// <summary>Adds men to the wounded bucket (same stacking pattern as AddTroop).</summary>
+        public void AddWounded(string troopId, int count)
+        {
+            if (count <= 0) return;
+            foreach (var w in wounded)
+            {
+                if (w.troopId != troopId) continue;
+                w.count += count;
+                return;
+            }
+
+            wounded.Add(new TroopStack { troopId = troopId, count = count });
         }
 
         public void RemoveMen(int count)
@@ -63,6 +125,27 @@ namespace Voidovia
             }
 
             troops.RemoveAll(t => t.count <= 0);
+        }
+
+        /// <summary>Remove a specific troop type/count (used to apply exact battle casualties so the
+        /// sim's weakest-first losses reach the real roster, unlike RemoveMen which strips biggest stacks).</summary>
+        public void RemoveTroops(string troopId, int count)
+        {
+            if (count <= 0) return;
+            for (var i = 0; i < troops.Count; i++)
+            {
+                if (troops[i].troopId != troopId) continue;
+                troops[i].count -= count;
+                if (troops[i].count <= 0) troops.RemoveAt(i);
+                return;
+            }
+        }
+
+        public void AddMorale(float delta)
+        {
+            morale += delta;
+            if (morale < 10f) morale = 10f;
+            if (morale > 100f) morale = 100f;
         }
 
         public void AddInventory(string itemId, int count = 1)
@@ -80,6 +163,9 @@ namespace Voidovia
         public bool TryEquip(string itemId, EquipSlot slot, out string unequippedId)
         {
             unequippedId = null;
+            if (slot == EquipSlot.Weapon && equippedWeaponId == itemId) return false;
+            if (slot == EquipSlot.Armour && equippedArmourId == itemId) return false;
+
             InventoryStack found = null;
             foreach (var s in inventory)
             {
@@ -139,10 +225,43 @@ namespace Voidovia
             return true;
         }
 
+        public PrisonerRecord AddPrisoner(string id, string displayName, string recruitTroopId, bool isLord = false, FactionId sourceFaction = FactionId.Bandits)
+        {
+            var record = new PrisonerRecord
+            {
+                id = id,
+                displayName = displayName,
+                recruitTroopId = recruitTroopId,
+                capturedDay = day,
+                isLord = isLord,
+                sourceFaction = sourceFaction
+            };
+            prisoners.Add(record);
+            return record;
+        }
+
+        public bool RemovePrisoner(string id) => prisoners.RemoveAll(p => p.id == id) > 0;
+
+        public bool TryFindPrisoner(string id, out PrisonerRecord record)
+        {
+            foreach (var p in prisoners)
+            {
+                if (p.id != id) continue;
+                record = p;
+                return true;
+            }
+
+            record = null;
+            return false;
+        }
+
         public void AddRelation(FactionId faction, int delta)
         {
             relations.TryGetValue(faction, out var value);
-            relations[faction] = value + delta;
+            value += delta;
+            relations[faction] = value;
+            if (value <= GameConstants.InfamyRelationThreshold)
+                reputation |= ReputationFlag.Infamous;
         }
 
         public int GetRelation(FactionId faction)

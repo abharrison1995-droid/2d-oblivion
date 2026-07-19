@@ -28,12 +28,12 @@ namespace Voidovia
         {
             if (_canvas != null) return;
             _canvas = UiFactory.CreateCanvas("TitleScreenCanvas", 60);
-            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, new Color(0.05f, 0.05f, 0.07f, 1f));
+            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, UiFactory.Theme.PanelBackground);
 
-            var title = UiFactory.Label(root, "Title", "VOIDOVIA", 72, TextAnchor.MiddleCenter, new Color(0.93f, 0.86f, 0.7f));
+            var title = UiFactory.Label(root, "Title", "VOIDOVIA", 72, TextAnchor.MiddleCenter, UiFactory.Theme.TextTitle);
             Stretch(title, 0.1f, 0.56f, 0.9f, 0.76f);
 
-            var tagline = UiFactory.Label(root, "Tagline", "A gritty low-fantasy warband saga", 24, TextAnchor.MiddleCenter, new Color(0.68f, 0.68f, 0.66f));
+            var tagline = UiFactory.Label(root, "Tagline", "A gritty low-fantasy warband saga", 24, TextAnchor.MiddleCenter, UiFactory.Theme.TextBody);
             Stretch(tagline, 0.1f, 0.47f, 0.9f, 0.55f);
 
             UiFactory.Button(root, "Continue", "Click to begin", new Vector2(0.35f, 0.16f), new Vector2(0.65f, 0.28f),

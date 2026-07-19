@@ -60,7 +60,7 @@ namespace Voidovia
             GameState.Instance.Act1Quest.StartQuest();
             _map.Show();
             _map.AppendLog($"Welcome, {result.heroName}. {result.stolenItemFlavour}");
-            _map.AppendLog("Butter rogues took it. Start by reaching Greyledger for advice.");
+            _map.AppendLog("Butter rogues took it. Start by reaching Lik-E-Leek for advice.");
             _map.AppendLog("Tip: use Save / Load on the map. Smoke test: Docs/SMOKE_TEST.txt");
         }
 
@@ -100,13 +100,15 @@ namespace Voidovia
             if (!DataLoader.TryLoadJson<TroopRosterData>("troops.json", out var troops, out error)) return false;
             if (!DataLoader.TryLoadJson<EconomyCatalog>("economy.json", out var catalog, out error)) return false;
             if (!DataLoader.TryLoadJson<BattleCardCatalogData>("battle_cards.json", out var cards, out error)) return false;
+            if (!DataLoader.TryLoadJson<CompanionCatalog>("companions.json", out var companions, out error)) return false;
+            if (!DataLoader.TryLoadJson<QuestTemplateCatalog>("quest_templates.json", out var questTemplates, out error)) return false;
             if (map?.nodes == null || map.nodes.Length == 0)
             {
                 error = "voidovia_map.json loaded but has no nodes.";
                 return false;
             }
 
-            GameState.Instance.BindData(map, troops, catalog, cards);
+            GameState.Instance.BindData(map, troops, catalog, cards, companions, questTemplates);
             Debug.Log($"[AppFlow] OK — {map.nodes.Length} nodes, {cards.cards.Length} cards. StreamingAssets={Application.streamingAssetsPath}");
             return true;
         }

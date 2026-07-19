@@ -13,12 +13,12 @@ def warn(m): warns.append(m)
 
 data_dir = root / "Assets/StreamingAssets/Data"
 loaded = {}
-for name in ["voidovia_map.json", "troops.json", "economy.json", "battle_cards.json"]:
+for name in ["voidovia_map.json", "troops.json", "economy.json", "battle_cards.json", "companions.json", "quest_templates.json"]:
     p = data_dir / name
     if not p.exists():
         err(f"MISSING {p}"); continue
     try:
-        loaded[name] = json.loads(p.read_text()); ok(f"JSON OK: {name}")
+        loaded[name] = json.loads(p.read_text(encoding="utf-8")); ok(f"JSON OK: {name}")
     except Exception as e:
         err(f"JSON FAIL {name}: {e}")
 
@@ -56,8 +56,35 @@ if "battle_cards.json" in loaded:
     if not any(c["id"] == "card_butter_grease_curse" for c in cards): err("Missing boss card")
     ok(f"Cards OK ({len(cards)})")
 
-scene = (root / "Assets/_Project/Scenes/WorldMap.unity").read_text()
-meta = (root / "Assets/_Project/Scripts/Bootstrap/WorldMapEntry.cs.meta").read_text()
+if "companions.json" in loaded:
+    companions = loaded["companions.json"]["companions"]
+    ids = [c["id"] for c in companions]
+    if "bangkok_kuo" not in ids: err("Missing starter companion bangkok_kuo")
+    if len(ids) != len(set(ids)): err("Duplicate companion ids")
+    nodes = loaded.get("voidovia_map.json", {}).get("nodes", [])
+    node_by_id = {n["id"]: n for n in nodes}
+    for c in companions:
+        home = c.get("homeNodeId")
+        if c.get("isQuestReward") or c.get("recruitCost", 0) == 0:
+            continue  # quest-reward or free-starter companions aren't found at a tavern
+        if not home:
+            err(f"Tavern companion {c['id']} missing homeNodeId")
+        elif home not in node_by_id:
+            err(f"Companion {c['id']} homeNodeId {home} is not a real node")
+        elif not node_by_id[home].get("hasTavern"):
+            err(f"Companion {c['id']} homeNodeId {home} has no tavern")
+    ok(f"Companions OK ({len(companions)})")
+
+if "quest_templates.json" in loaded:
+    templates = loaded["quest_templates.json"]["templates"]
+    types_seen = {t["type"] for t in templates}
+    if types_seen != {0, 1, 2, 3, 4}: err(f"Quest templates don't cover all 5 types: {sorted(types_seen)}")
+    ids = [t["id"] for t in templates]
+    if len(ids) != len(set(ids)): err("Duplicate quest template ids")
+    ok(f"Quest templates OK ({len(templates)})")
+
+scene = (root / "Assets/_Project/Scenes/WorldMap.unity").read_text(encoding="utf-8")
+meta = (root / "Assets/_Project/Scripts/Bootstrap/WorldMapEntry.cs.meta").read_text(encoding="utf-8")
 guid = re.search(r"guid: ([a-f0-9]+)", meta).group(1)
 if guid not in scene: err("WorldMapEntry guid not wired in WorldMap.unity")
 else: ok("WorldMapEntry wired")
@@ -67,7 +94,7 @@ else: ok("AppRoot present")
 scripts = list((root / "Assets/_Project/Scripts").rglob("*.cs"))
 types = defaultdict(list)
 for sp in scripts:
-    t = sp.read_text()
+    t = sp.read_text(encoding="utf-8")
     if t.count("{") != t.count("}"):
         err(f"Brace mismatch {sp.relative_to(root)}")
     for m in re.finditer(r"\b(class|enum|struct)\s+(\w+)", t):

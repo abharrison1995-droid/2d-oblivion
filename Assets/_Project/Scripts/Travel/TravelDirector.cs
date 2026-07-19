@@ -26,6 +26,11 @@ namespace Voidovia
         public bool canFlee = true;
         public bool canTalk;
         public bool canPay;
+        public bool friendlyBandits;
+
+        /// <summary>Rolled once when the encounter is generated so the pre-fight surrender/count
+        /// preview and the actual battle use the same force instead of rolling twice.</summary>
+        public BattleForce cachedForce;
     }
 
     /// <summary>
@@ -47,6 +52,20 @@ namespace Voidovia
             TravelEncounterKind.Refugees,
             TravelEncounterKind.Healers,
             TravelEncounterKind.BanditAmbush
+        };
+
+        /// <summary>Off-path table: almost entirely hostile/negative kinds — no maintained
+        /// road means no toll-paying traders or friendly rumour-mongers out here.</summary>
+        static readonly TravelEncounterKind[] OffPathTable =
+        {
+            TravelEncounterKind.MinorThieves,
+            TravelEncounterKind.MinorThieves,
+            TravelEncounterKind.BanditAmbush,
+            TravelEncounterKind.BanditAmbush,
+            TravelEncounterKind.Weather,
+            TravelEncounterKind.Weather,
+            TravelEncounterKind.Rumour,
+            TravelEncounterKind.Refugees
         };
 
         public TravelEncounter RollEncounter(RoadEdgeData edge, System.Random rng)
@@ -73,7 +92,45 @@ namespace Voidovia
             }
 
             var kind = LightTable[rng.Next(LightTable.Length)];
-            return Build(kind);
+            var encounter = Build(kind);
+            encounter.cachedForce = BattleForceTables.Encounter(kind, rng);
+            ApplyBanditFriendliness(encounter);
+            return encounter;
+        }
+
+        /// <summary>Rolled for off-path steps instead of RollEncounter — same danger gate, hostile-biased table.</summary>
+        public TravelEncounter RollOffPathEncounter(RoadEdgeData edge, System.Random rng)
+        {
+            if (edge == null)
+                return None();
+
+            var roll = rng.NextDouble();
+            if (roll > edge.danger)
+                return None();
+
+            var kind = OffPathTable[rng.Next(OffPathTable.Length)];
+            var encounter = Build(kind);
+            encounter.cachedForce = BattleForceTables.Encounter(kind, rng);
+            ApplyBanditFriendliness(encounter);
+            return encounter;
+        }
+
+        static void ApplyBanditFriendliness(TravelEncounter e)
+        {
+            if (e.kind != TravelEncounterKind.MinorThieves && e.kind != TravelEncounterKind.BanditAmbush)
+                return;
+
+            var party = GameState.Instance?.Party;
+            if (party == null || party.GetRelation(FactionId.Bandits) < GameConstants.BanditFriendlyRelationThreshold)
+                return;
+
+            e.friendlyBandits = true;
+            e.title = e.kind == TravelEncounterKind.BanditAmbush ? "Bandit banners, raised in greeting" : "Familiar footpads";
+            e.body = "These raiders know your name — and count you a friend. They wave you through, no toll asked.";
+            e.canFight = false;
+            e.canFlee = true;
+            e.canTalk = true;
+            e.canPay = false;
         }
 
         public void ApplyTravelTime(PartyState party, RoadEdgeData edge)
@@ -83,6 +140,7 @@ namespace Voidovia
             {
                 party.hours -= GameConstants.HoursPerDay;
                 party.day++;
+                GameState.Instance?.OnNewDay();
             }
         }
 
@@ -106,7 +164,7 @@ namespace Voidovia
             {
                 kind = kind,
                 title = "Merchant train",
-                body = "Oxen, cloth, and gossip from Saltmere.",
+                body = "Oxen, cloth, and gossip from Voi-D-Nee.",
                 canTalk = true,
                 canPay = true
             },

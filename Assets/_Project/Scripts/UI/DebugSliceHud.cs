@@ -34,14 +34,14 @@ namespace Voidovia
             if (GUILayout.Button("Travel (light encounters only)"))
                 TravelTo(_destId);
 
-            if (GUILayout.Button("Speak to advisor (Greyledger)"))
+            if (GUILayout.Button("Speak to advisor (Lik-E-Leek)"))
             {
                 if (p.currentNodeId != "greyledger")
-                    Append("Travel to Greyledger first.");
+                    Append("Travel to Lik-E-Leek first.");
                 else
                 {
                     g.Act1Quest.SpeakToAdvisor();
-                    Append("Advisor named Ashpond and Tollbar.");
+                    Append("Advisor named Beef and Tollbar.");
                 }
             }
 
@@ -75,7 +75,7 @@ namespace Voidovia
                 Append(msg);
             }
 
-            if (GUILayout.Button("Tick one day (food + if Monday wages)"))
+            if (GUILayout.Button("Tick one day (food + weekly upkeep via OnNewDay)"))
                 TickDay();
 
             GUILayout.Space(8);
@@ -133,20 +133,12 @@ namespace Voidovia
         {
             var g = GameState.Instance;
             g.Party.day++;
+            g.OnNewDay(); // weekly wages + mercenary purse now fire from here (see GameState.PayWeeklyUpkeep)
             g.Economy.ConsumeFood(g.Party, 1f, out var foodLog);
             Append(foodLog);
-            if (g.Party.day % 7 == 0)
-            {
-                var wages = g.Economy.WeeklyWageBill(g.Party);
-                g.Party.gold -= wages;
-                Append($"Wages paid: -{wages}g (now {g.Party.gold})");
-                if (g.Party.isVoidoviaMercenary)
-                {
-                    var purse = g.RollMercenaryPurse();
-                    g.Party.gold += purse;
-                    Append($"Lord Void's purse: +{purse}g");
-                }
-            }
+            foreach (var note in g.PendingNotifications)
+                Append(note);
+            g.PendingNotifications.Clear();
         }
 
         void Append(string line)

@@ -26,3 +26,23 @@ step happens with no console errors and no blank/frozen Game view.
 Faster manual pass: DebugSliceHud (the IMGUI panel in the top-left corner during Play) has
 buttons that shortcut steps 3-9 without needing to drive the map UI — useful for quickly
 re-checking quest/battle logic after a script change.
+
+---
+
+Travel events, bandit camps & prisoners (2026-07-16 additions) — not yet covered above.
+
+11. Advance inch repeatedly on any road until a random event fires. Confirm the encounter
+    panel shows a colored icon swatch (not a blank box) tinted to the event kind, and that
+    Trader/Healers/Refugees/Rumour/Weather all produce a real effect in the log (gold, food,
+    morale, or a map reveal), not just flavor text.
+12. Find one of the three diamond-shaped nodes (Ravine Hold / Fenmurk Den / Sootmarsh Camp,
+    each off a "far" road from Red Knoll / Marshend / Sheepgate). Travel there, tap
+    Settlement, and Raid it. Win → gold/loot logged, possible "Bandit Captive" prisoner.
+    Losing a camp raid or a road Bandit Ambush should log gold stolen (≤512g, 20% of your
+    purse) and drop you near a settlement a day later.
+13. Open Party/Inv → Prisoners tab. A held prisoner should show a "settling in (Nd)" countdown
+    before Recruit becomes tappable; Sell should only be tappable while standing at a
+    tavern-flagged settlement; Release should always work and should not require a tavern.
+14. Tap the "▼ Hide" button in the bottom-right corner — the whole menu should collapse and
+    the map should expand to fill the space, with the same button (now "▲ Menu") restoring
+    it. Confirm the button stays a normal, easily-tappable size in both states.

@@ -29,15 +29,15 @@ namespace Voidovia
         {
             if (_canvas != null) return;
             _canvas = UiFactory.CreateCanvas("VoidAudienceCanvas", 45);
-            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, new Color(0.09f, 0.08f, 0.07f, 0.98f));
-            var title = UiFactory.Label(root, "Title", "Audience — Lord Void", 36, TextAnchor.UpperCenter, new Color(0.93f, 0.86f, 0.7f));
+            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, UiFactory.Theme.PanelBackground);
+            var title = UiFactory.Label(root, "Title", "Audience — Lord Void", 36, TextAnchor.UpperCenter, UiFactory.Theme.TextTitle);
             var tr = title.GetComponent<RectTransform>();
             tr.anchorMin = new Vector2(0.05f, 0.88f);
             tr.anchorMax = new Vector2(0.95f, 0.97f);
 
             UiFactory.Portrait(root, "Portrait", new Vector2(0.08f, 0.62f), new Vector2(0.30f, 0.86f), "lord_void");
 
-            _body = UiFactory.Label(root, "Body", "", 24, TextAnchor.UpperLeft, new Color(0.85f, 0.84f, 0.8f));
+            _body = UiFactory.Label(root, "Body", "", 24, TextAnchor.UpperLeft, UiFactory.Theme.TextBody);
             var br = _body.GetComponent<RectTransform>();
             br.anchorMin = new Vector2(0.34f, 0.28f);
             br.anchorMax = new Vector2(0.92f, 0.86f);

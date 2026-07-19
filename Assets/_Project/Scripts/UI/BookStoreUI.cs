@@ -27,8 +27,8 @@ namespace Voidovia
         {
             if (_canvas != null) return;
             _canvas = UiFactory.CreateCanvas("BookStoreCanvas", 35);
-            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, new Color(0.08f, 0.07f, 0.06f, 0.97f));
-            _title = UiFactory.Label(root, "Title", "Book Store — Treatises of War", 34, TextAnchor.UpperCenter, new Color(0.93f, 0.86f, 0.7f));
+            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, UiFactory.Theme.PanelBackground);
+            _title = UiFactory.Label(root, "Title", "Book Store — Treatises of War", 34, TextAnchor.UpperCenter, UiFactory.Theme.TextTitle);
             var tr = _title.GetComponent<RectTransform>();
             tr.anchorMin = new Vector2(0.05f, 0.9f);
             tr.anchorMax = new Vector2(0.95f, 0.98f);
@@ -53,7 +53,7 @@ namespace Voidovia
             foreach (Transform c in _list) Destroy(c.gameObject);
             var g = GameState.Instance;
             var gold = g.Party.gold;
-            UiFactory.Label(_list, "Gold", $"Your gold: {gold}", 22, TextAnchor.UpperLeft, new Color(0.85f, 0.9f, 0.7f));
+            UiFactory.Label(_list, "Gold", $"Your gold: {gold}", 22, TextAnchor.UpperLeft, UiFactory.Theme.TextDim);
             var gr = _list.Find("Gold") as RectTransform;
             if (gr != null)
             {
@@ -98,6 +98,13 @@ namespace Voidovia
             {
                 _body.text = $"Need {card.bookstorePrice}g. You have {g.Party.gold}g. These are meant to hurt.";
                 return;
+            }
+
+            if (g.Map.TryGetNode(g.Party.currentNodeId, out var node))
+            {
+                g.Market.EnsureMarket(node);
+                var market = g.Market.Get(node.id);
+                if (market != null) market.buyerGold += card.bookstorePrice;
             }
 
             _body.text = $"Purchased {card.displayName}. It waits in your pouch for battle.";

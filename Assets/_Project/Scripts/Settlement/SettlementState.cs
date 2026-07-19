@@ -20,9 +20,19 @@ namespace Voidovia
         public string nodeId;
         public string displayName;
         public FactionId culture = FactionId.Voidovia;
+        /// <summary>0–100 wealth/population. Raids sack it; peace slowly rebuilds it. Drives market
+        /// purse depth and how many recruits a settlement can field. Baseline is 50.</summary>
+        public float prosperity = 50f;
         public readonly Dictionary<BuildingType, BuildingState> buildings = new();
 
         public int GrottoTier => GetTier(BuildingType.GovernorsGrotto);
+
+        public void AddProsperity(float delta)
+        {
+            prosperity += delta;
+            if (prosperity < 0f) prosperity = 0f;
+            if (prosperity > 100f) prosperity = 100f;
+        }
 
         public SettlementState(string nodeId, string displayName)
         {
@@ -40,7 +50,7 @@ namespace Voidovia
             if (type == BuildingType.GovernorsGrotto)
                 return targetTier <= 4 && targetTier == GrottoTier + 1;
 
-            if (type == BuildingType.ChurchOfTheBlackFluffyTail)
+            if (type is BuildingType.ChurchOfTheBlackFluffyTail or BuildingType.MooseCavalryYard or BuildingType.CinderFoundry)
                 return GrottoTier >= 4 && GetTier(type) == 0;
 
             if (type is BuildingType.Sewers or BuildingType.Aqueduct or BuildingType.WheatFields
@@ -65,7 +75,7 @@ namespace Voidovia
         {
             if (!CanUpgrade(type, targetTier))
             {
-                error = type == BuildingType.ChurchOfTheBlackFluffyTail
+                error = type is BuildingType.ChurchOfTheBlackFluffyTail or BuildingType.MooseCavalryYard or BuildingType.CinderFoundry
                     ? "Requires Governor's Grotto tier 4."
                     : "Governor's Grotto must match or exceed this tier first.";
                 return false;
@@ -81,6 +91,12 @@ namespace Voidovia
 
         public bool CanRecruitVoidKnight() =>
             GetTier(BuildingType.ChurchOfTheBlackFluffyTail) >= 1 && GrottoTier >= 4;
+
+        public bool CanRecruitMooseLancer() =>
+            GetTier(BuildingType.MooseCavalryYard) >= 1 && GrottoTier >= 4;
+
+        public bool CanRecruitCinderGuard() =>
+            GetTier(BuildingType.CinderFoundry) >= 1 && GrottoTier >= 4;
 
         public string HighestBarracksRecruit() => GetTier(BuildingType.Barracks) switch
         {

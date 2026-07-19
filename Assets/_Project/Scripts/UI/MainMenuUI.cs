@@ -28,9 +28,9 @@ namespace Voidovia
         {
             if (_canvas != null) return;
             _canvas = UiFactory.CreateCanvas("MainMenuCanvas", 55);
-            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, new Color(0.06f, 0.06f, 0.08f, 1f));
+            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, UiFactory.Theme.PanelBackground);
 
-            var title = UiFactory.Label(root, "Title", "VOIDOVIA", 44, TextAnchor.MiddleCenter, new Color(0.93f, 0.86f, 0.7f));
+            var title = UiFactory.Label(root, "Title", "VOIDOVIA", 44, TextAnchor.MiddleCenter, UiFactory.Theme.TextTitle);
             var tr = title.GetComponent<RectTransform>();
             tr.anchorMin = new Vector2(0.1f, 0.72f);
             tr.anchorMax = new Vector2(0.9f, 0.86f);

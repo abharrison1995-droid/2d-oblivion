@@ -1,0 +1,9 @@
+{
+  "templates": [
+    { "id": "tpl_bandit_hideout", "type": 0, "titlePattern": "Clear the den near {0}", "minReward": 60, "maxReward": 160, "minDeadlineDays": 6, "maxDeadlineDays": 10 },
+    { "id": "tpl_escort", "type": 1, "titlePattern": "Escort a caravan to {0}", "minReward": 50, "maxReward": 130, "minDeadlineDays": 3, "maxDeadlineDays": 6 },
+    { "id": "tpl_delivery", "type": 2, "titlePattern": "Carry word to {0}", "minReward": 30, "maxReward": 90, "minDeadlineDays": 2, "maxDeadlineDays": 5 },
+    { "id": "tpl_bounty", "type": 3, "titlePattern": "Bring down {0}", "minReward": 80, "maxReward": 200, "minDeadlineDays": 6, "maxDeadlineDays": 10 },
+    { "id": "tpl_troop_levy", "type": 4, "titlePattern": "Levy of men for {0}", "minReward": 70, "maxReward": 180, "minDeadlineDays": 4, "maxDeadlineDays": 8 }
+  ]
+}

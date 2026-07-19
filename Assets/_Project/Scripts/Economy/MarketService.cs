@@ -5,7 +5,9 @@ using UnityEngine;
 namespace Voidovia
 {
     /// <summary>
-    /// Per-settlement buyer wallet + recruit stock (mostly T1 @ ~15g).
+    /// Per-settlement buyer wallet + recruit stock. Recruit price is derived from the
+    /// recruited troop's actual hireFee (see MarketService.RecruitPrice), not stored here,
+    /// so it can't drift out of sync with troops.json.
     /// </summary>
     public class SettlementMarket
     {
@@ -13,24 +15,32 @@ namespace Voidovia
         public int buyerGold;
         public bool isPeasant; // villages
         public string recruitTroopId = "void_militia";
-        public int recruitPrice = 15;
         public int recruitStock = 12;
 
         public static SettlementMarket CreateFor(MapNodeData node, System.Random rng)
         {
             var peasant = node.type == NodeType.Village;
+            // Towns/capitals sometimes offer their culture's ranged recruit instead of the melee line.
+            var ranged = node.type is NodeType.Town or NodeType.Capital && rng.NextDouble() > 0.5;
             return new SettlementMarket
             {
                 nodeId = node.id,
                 isPeasant = peasant,
                 buyerGold = peasant ? rng.Next(40, 91) : rng.Next(220, 481),
-                recruitTroopId = node.type is NodeType.Town or NodeType.Capital
-                    ? (rng.NextDouble() > 0.5 ? "void_militia" : "void_archer")
-                    : "void_militia",
-                recruitPrice = 15,
+                recruitTroopId = RecruitTroopForCulture(node.controllingFaction, ranged),
                 recruitStock = peasant ? rng.Next(4, 9) : rng.Next(8, 16)
             };
         }
+
+        /// <summary>The T1 recruit a settlement offers, by its controlling faction's culture — so a
+        /// Butter-held town hires out Butter Thugs, a Nomad town Nomad riders, and everyone else the
+        /// Void line. Captured enemies already recruit into their own tree; this is the buy-side mirror.</summary>
+        static string RecruitTroopForCulture(FactionId faction, bool ranged) => faction switch
+        {
+            FactionId.ButterKlanBoys => ranged ? "butter_slinger" : "butter_thug",
+            FactionId.Nomads => ranged ? "nomad_skirmisher" : "nomad_outrider",
+            _ => ranged ? "void_archer" : "void_militia"
+        };
     }
 
     public class MarketService
@@ -54,6 +64,46 @@ namespace Voidovia
                 _markets[node.id] = SettlementMarket.CreateFor(node, _rng);
         }
 
+        /// <summary>Re-point a settlement's recruit stock at its new owner's culture after a capture, so
+        /// a Butter-taken town starts hiring out Butter troops, a Nomad-taken one Nomad riders, etc.</summary>
+        public void OnOwnerChanged(MapNodeData node)
+        {
+            if (!_markets.TryGetValue(node.id, out var market))
+            {
+                EnsureMarket(node);
+                return;
+            }
+
+            var ranged = node.type is NodeType.Town or NodeType.Capital && _rng.NextDouble() > 0.5;
+            market.recruitTroopId = RecruitTroopForCulture(node.controllingFaction, ranged);
+        }
+
+        public void TickDay(System.Random rng)
+        {
+            foreach (var market in _markets.Values)
+            {
+                // Prosperity scales how deep a purse the buyers hold and how many recruits are willing —
+                // so a raided (or thriving) town shows it at the market.
+                var prosperity = GameState.Instance?.ProsperityOf(market.nodeId) ?? GameConstants.ProsperityBaseline;
+                var factor = Mathf.Clamp(prosperity / GameConstants.ProsperityBaseline, 0.3f, 1.8f);
+
+                var maxGold = Mathf.RoundToInt((market.isPeasant ? 90 : 480) * factor);
+                if (market.buyerGold < maxGold)
+                {
+                    var regen = market.isPeasant ? rng.Next(10, 25) : rng.Next(30, 80);
+                    market.buyerGold += regen;
+                    if (market.buyerGold > maxGold) market.buyerGold = maxGold;
+                }
+
+                var maxStock = Mathf.Max(1, Mathf.RoundToInt((market.isPeasant ? 8 : 15) * factor));
+                if (market.recruitStock < maxStock)
+                {
+                    market.recruitStock += rng.Next(1, 3);
+                    if (market.recruitStock > maxStock) market.recruitStock = maxStock;
+                }
+            }
+        }
+
         public SettlementMarket Get(string nodeId) =>
             _markets.TryGetValue(nodeId, out var m) ? m : null;
 
@@ -63,6 +113,8 @@ namespace Voidovia
         {
             if (item == null || item.unsellable) return 0;
             var mult = market.isPeasant ? 0.45f : 0.85f;
+            mult *= HeroStatBonuses.TradeSellMultiplier();
+            mult *= CompanionBonuses.TradeSellMultiplier();
             return Math.Max(1, (int)(item.baseValue * mult));
         }
 
@@ -98,6 +150,17 @@ namespace Voidovia
             return true;
         }
 
+        /// <summary>The actual T1 recruit's hireFee (from troops.json), adjusted by Trade — the
+        /// single source of truth so this can't drift from what SettlementUI's building-tier
+        /// recruiting charges for the same troop.</summary>
+        public int RecruitPrice(SettlementMarket market)
+        {
+            var baseFee = 10;
+            if (GameState.Instance?.TroopRoster != null && GameState.Instance.TroopRoster.TryGet(market.recruitTroopId, out var def))
+                baseFee = def.hireFee;
+            return Mathf.Max(1, Mathf.RoundToInt(baseFee * HeroStatBonuses.TradeBuyMultiplier() * CompanionBonuses.RecruitPriceMultiplier()));
+        }
+
         public bool TryRecruit(PartyState party, SettlementMarket market, out string log)
         {
             if (market.recruitStock <= 0)
@@ -106,16 +169,21 @@ namespace Voidovia
                 return false;
             }
 
-            if (party.gold < market.recruitPrice)
+            if (GameState.Instance != null && !GameState.Instance.CanRecruit(1, out log))
+                return false;
+
+            var price = RecruitPrice(market);
+            if (party.gold < price)
             {
-                log = $"Need {market.recruitPrice}g to hire.";
+                log = $"Need {price}g to hire.";
                 return false;
             }
 
-            party.gold -= market.recruitPrice;
+            party.gold -= price;
+            market.buyerGold += price;
             market.recruitStock--;
             AddTroop(party, market.recruitTroopId, 1);
-            log = $"Hired 1× {market.recruitTroopId} for {market.recruitPrice}g. Stock {market.recruitStock}.";
+            log = $"Hired 1× {market.recruitTroopId} for {price}g. Stock {market.recruitStock}.";
             return true;
         }
 

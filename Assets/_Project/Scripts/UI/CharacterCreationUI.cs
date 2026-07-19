@@ -22,6 +22,8 @@ namespace Voidovia
         Text _statsPreview;
         RectTransform _choicesRoot;
         RectTransform _portraitSlot;
+        Button _backBtn;
+        readonly System.Collections.Generic.List<Button> _familyChoiceButtons = new();
 
         public void Show()
         {
@@ -33,23 +35,27 @@ namespace Voidovia
             }
 
             _canvas = UiFactory.CreateCanvas("CharacterCreationCanvas", 50);
-            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, new Color(0.08f, 0.09f, 0.11f, 0.98f));
+            var root = UiFactory.Panel(_canvas.transform, "Root", Vector2.zero, Vector2.one, UiFactory.Theme.PanelBackground);
 
-            _title = UiFactory.Label(root, "Title", "Who are you?", 42, TextAnchor.UpperCenter, new Color(0.93f, 0.88f, 0.74f));
+            _title = UiFactory.Label(root, "Title", "Who are you?", 42, TextAnchor.UpperCenter, UiFactory.Theme.TextTitle);
             var titleRt = _title.GetComponent<RectTransform>();
             titleRt.anchorMin = new Vector2(0.05f, 0.88f);
             titleRt.anchorMax = new Vector2(0.95f, 0.98f);
 
             _portraitSlot = UiFactory.Panel(root, "PortraitSlot", new Vector2(0.78f, 0.62f), new Vector2(0.94f, 0.87f), Color.clear);
 
-            _body = UiFactory.Label(root, "Body", "", 26, TextAnchor.UpperLeft, new Color(0.85f, 0.84f, 0.8f));
+            _body = UiFactory.Label(root, "Body", "", 26, TextAnchor.UpperLeft, UiFactory.Theme.TextBody);
             var bodyRt = _body.GetComponent<RectTransform>();
             bodyRt.anchorMin = new Vector2(0.06f, 0.62f);
             bodyRt.anchorMax = new Vector2(0.76f, 0.87f);
 
-            _choicesRoot = UiFactory.Panel(root, "Choices", new Vector2(0.06f, 0.22f), new Vector2(0.94f, 0.60f), new Color(0, 0, 0, 0.15f));
+            _choicesRoot = UiFactory.Panel(root, "Choices", new Vector2(0.06f, 0.30f), new Vector2(0.94f, 0.60f), new Color(0, 0, 0, 0.15f));
 
-            _statsPreview = UiFactory.Label(root, "Stats", "", 24, TextAnchor.LowerLeft, new Color(0.7f, 0.78f, 0.72f));
+            // Dedicated strip below the choices panel — never overlaps the last choice card.
+            _backBtn = UiFactory.Button(root, "Back", "Back", new Vector2(0.06f, 0.21f), new Vector2(0.30f, 0.28f), null);
+            _backBtn.GetComponent<Image>().color = new Color(0.32f, 0.16f, 0.15f, 0.95f);
+
+            _statsPreview = UiFactory.Label(root, "Stats", "", 24, TextAnchor.LowerLeft, UiFactory.Theme.TextBody);
             var statsRt = _statsPreview.GetComponent<RectTransform>();
             statsRt.anchorMin = new Vector2(0.06f, 0.02f);
             statsRt.anchorMax = new Vector2(0.94f, 0.20f);
@@ -81,19 +87,22 @@ namespace Voidovia
             {
                 case 0:
                     _title.text = "Family";
-                    _body.text = "You are from a family of…\nThis sets your Voidovia starting place, coin, and base lean.";
                     AddNameField();
+                    _familyChoiceButtons.Clear();
                     for (var i = 0; i < 4; i++)
                     {
                         var idx = i;
-                        AddChoice(CharacterCreation.FamilyLabels[i], CharacterCreation.FamilyBlurbs[i], i, () =>
+                        var btn = AddChoice(CharacterCreation.FamilyLabels[i], CharacterCreation.FamilyBlurbs[i], i, () =>
                         {
+                            if (string.IsNullOrWhiteSpace(_name)) return;
                             _family = (FamilyOrigin)idx;
                             _step = 1;
                             Rebuild();
                         });
+                        _familyChoiceButtons.Add(btn);
                     }
 
+                    UpdateNameGate();
                     break;
                 case 1:
                     _title.text = "As a child";
@@ -108,11 +117,6 @@ namespace Voidovia
                             Rebuild();
                         });
                     }
-                    UiFactory.Button(_choicesRoot, "Back", "Back", new Vector2(0f, 0f), new Vector2(0.3f, 0.14f), () =>
-                    {
-                        _step = 0;
-                        Rebuild();
-                    });
                     break;
                 case 2:
                     _title.text = "The moose";
@@ -127,11 +131,6 @@ namespace Voidovia
                             Rebuild();
                         });
                     }
-                    UiFactory.Button(_choicesRoot, "Back", "Back", new Vector2(0f, 0f), new Vector2(0.3f, 0.14f), () =>
-                    {
-                        _step = 1;
-                        Rebuild();
-                    });
                     break;
                 case 3:
                     _title.text = "Begin";
@@ -142,12 +141,19 @@ namespace Voidovia
                         _canvas.gameObject.SetActive(false);
                         Completed?.Invoke(result);
                     });
-                    UiFactory.Button(_choicesRoot, "Back", "Back", new Vector2(0.15f, 0.12f), new Vector2(0.85f, 0.28f), () =>
-                    {
-                        _step = 2;
-                        Rebuild();
-                    });
                     break;
+            }
+
+            _backBtn.gameObject.SetActive(_step > 0);
+            _backBtn.onClick.RemoveAllListeners();
+            if (_step > 0)
+            {
+                var previousStep = _step - 1;
+                _backBtn.onClick.AddListener(() =>
+                {
+                    _step = previousStep;
+                    Rebuild();
+                });
             }
         }
 
@@ -155,12 +161,28 @@ namespace Voidovia
         {
             var field = UiFactory.Input(_choicesRoot, "Name", "Your name…", new Vector2(0f, 0.82f), new Vector2(1f, 0.98f));
             field.text = _name;
-            field.onValueChanged.AddListener(v => _name = v);
+            field.onValueChanged.AddListener(v =>
+            {
+                _name = v;
+                UpdateNameGate();
+            });
         }
 
-        void AddChoice(string title, string blurb, int index, System.Action onClick)
+        void UpdateNameGate()
         {
-            // Leave room at bottom for Back on later steps; 4 choices stack
+            var hasName = !string.IsNullOrWhiteSpace(_name);
+            foreach (var btn in _familyChoiceButtons)
+                if (btn != null) btn.interactable = hasName;
+
+            var nameLine = hasName ? $"Name: {_name}" : "Name: (not set yet)";
+            _body.text = hasName
+                ? $"{nameLine}\nYou are from a family of…\nThis sets your Voidovia starting place, coin, and base lean."
+                : $"{nameLine}\nYou are from a family of…\nEnter a name above before choosing — Voidovia needs to know what to call you.";
+        }
+
+        Button AddChoice(string title, string blurb, int index, System.Action onClick)
+        {
+            // Top starts at 0.78 to leave room for the name field above on step 0; 4 choices stack.
             var top = 0.78f - index * 0.18f;
             var bottom = top - 0.16f;
             var btn = UiFactory.Button(_choicesRoot, "Choice" + index, $"{title}\n{blurb}", new Vector2(0f, bottom), new Vector2(1f, top), onClick);
@@ -170,6 +192,8 @@ namespace Voidovia
                 label.fontSize = 22;
                 label.alignment = TextAnchor.MiddleLeft;
             }
+
+            return btn;
         }
     }
 }

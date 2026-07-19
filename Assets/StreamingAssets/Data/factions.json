@@ -1,18 +1,10 @@
 {
   "factions": [
     { "id": "voidovia", "displayName": "Voidovia", "ruler": "Lord Void, The Wide Eyed Beast", "notes": "Brutal reputation, sweet protector. Butter pressure on the border." },
-    { "id": "butter_klan_boys", "displayName": "Butter Klan Boys", "ruler": "Clan chiefs", "notes": "Funny and brutal. Rogue raiders early; true warbands later." },
-    { "id": "ra_xael", "displayName": "Ra-Xael Dynasty", "ruler": "Dynastic court", "notes": "Skeleton only." },
-    { "id": "small_spine", "displayName": "Small Spine", "ruler": "Spine elders", "notes": "Half-kingdom; mountain and culture." },
-    { "id": "long_spines", "displayName": "Long Spines", "ruler": "Spine elders", "notes": "Other half; tolerate Small Spine, self-segregated." },
-    { "id": "orthodoxy", "displayName": "The Orthodoxy", "ruler": "Church state", "notes": "Templars and crusades." }
-  ],
-  "companions": [
-    {
-      "id": "bangkok_kuo",
-      "displayName": "Bangkok Kuo",
-      "role": "Eastern general",
-      "traits": "Loyal; loves the art of war; quotes Sun Tzu in battle pauses."
-    }
+    { "id": "butter_klan_boys", "displayName": "Butter Klan Boys", "ruler": "Rendered Ronk, High Churn-Chief", "notes": "Funny and brutal. Rogue raiders early; true warbands later." },
+    { "id": "ra_xael", "displayName": "Ra-Xael Dynasty", "ruler": "Regent Ixessa Ra-Xael", "notes": "Skeleton only." },
+    { "id": "small_spine", "displayName": "Small Spine", "ruler": "Elder Vask Cromspine", "notes": "Half-kingdom; mountain and culture." },
+    { "id": "long_spines", "displayName": "Long Spines", "ruler": "Elder-Marshal Renna Farlow", "notes": "Other half; tolerate Small Spine, self-segregated." },
+    { "id": "orthodoxy", "displayName": "The Orthodoxy", "ruler": "High Templar Aurelio Bask", "notes": "Templars and crusades." }
   ]
 }
