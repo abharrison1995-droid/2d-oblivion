@@ -13,7 +13,8 @@ namespace Voidovia
         Refugees,
         Weather,
         BanditAmbush,
-        ButterRaid // locked until later game
+        ButterRaid, // locked until later game
+        VoidoviaPatrol // hunts the player while Wanted in Voidovia
     }
 
     [Serializable]
@@ -26,6 +27,17 @@ namespace Voidovia
         public bool canFlee = true;
         public bool canTalk;
         public bool canPay;
+        public bool friendlyBandits;
+
+        /// <summary>Rolled once when the encounter is generated so the pre-fight surrender/count
+        /// preview and the actual battle use the same force instead of rolling twice.</summary>
+        public BattleForce cachedForce;
+
+        /// <summary>Caravan cargo (Trader encounters): the coin and trade goods you'd loot by raiding, or
+        /// the goods offered when you trade peacefully. Rolled once at generation.</summary>
+        public int caravanGold;
+        public string caravanGoodId;
+        public int caravanGoodCount;
     }
 
     /// <summary>
@@ -47,6 +59,20 @@ namespace Voidovia
             TravelEncounterKind.Refugees,
             TravelEncounterKind.Healers,
             TravelEncounterKind.BanditAmbush
+        };
+
+        /// <summary>Off-path table: almost entirely hostile/negative kinds — no maintained
+        /// road means no toll-paying traders or friendly rumour-mongers out here.</summary>
+        static readonly TravelEncounterKind[] OffPathTable =
+        {
+            TravelEncounterKind.MinorThieves,
+            TravelEncounterKind.MinorThieves,
+            TravelEncounterKind.BanditAmbush,
+            TravelEncounterKind.BanditAmbush,
+            TravelEncounterKind.Weather,
+            TravelEncounterKind.Weather,
+            TravelEncounterKind.Rumour,
+            TravelEncounterKind.Refugees
         };
 
         public TravelEncounter RollEncounter(RoadEdgeData edge, System.Random rng)
@@ -73,7 +99,73 @@ namespace Voidovia
             }
 
             var kind = LightTable[rng.Next(LightTable.Length)];
-            return Build(kind);
+            var encounter = Build(kind);
+            encounter.cachedForce = BattleForceTables.Encounter(kind, rng);
+            ApplyCaravanCargo(encounter, rng);
+            ApplyBanditFriendliness(encounter);
+            return encounter;
+        }
+
+        /// <summary>Fills a caravan's cargo (coin + trade goods). Cargo scales up a little so a raid can be
+        /// a real payday — at the cost of the infamy that comes with robbing the realm's roads.</summary>
+        static void ApplyCaravanCargo(TravelEncounter e, System.Random rng)
+        {
+            if (e.kind != TravelEncounterKind.Trader) return;
+            e.caravanGold = rng.Next(40, 121);
+            e.caravanGoodId = "grain_trade";
+            e.caravanGoodCount = rng.Next(2, 5);
+        }
+
+        /// <summary>Rolled for off-path steps instead of RollEncounter — same danger gate, hostile-biased table.</summary>
+        public TravelEncounter RollOffPathEncounter(RoadEdgeData edge, System.Random rng)
+        {
+            if (edge == null)
+                return None();
+
+            var roll = rng.NextDouble();
+            if (roll > edge.danger)
+                return None();
+
+            var kind = OffPathTable[rng.Next(OffPathTable.Length)];
+            var encounter = Build(kind);
+            encounter.cachedForce = BattleForceTables.Encounter(kind, rng);
+            ApplyBanditFriendliness(encounter);
+            return encounter;
+        }
+
+        /// <summary>A Voidovia patrol that runs down a wanted outlaw. Fight them (and darken your name
+        /// further), bribe past, or run. Fielded with real Void troops, so a win captures Void soldiers.</summary>
+        public TravelEncounter RollWantedPatrol(System.Random rng)
+        {
+            return new TravelEncounter
+            {
+                kind = TravelEncounterKind.VoidoviaPatrol,
+                title = "Voidovia patrol",
+                body = "Lord Void's riders wheel across the road — they have your description. \"Stand and answer for your crimes, outlaw.\"",
+                canFight = true,
+                canFlee = true,
+                canTalk = false,
+                canPay = true,
+                cachedForce = BattleForceTables.VoidoviaPatrol(rng)
+            };
+        }
+
+        static void ApplyBanditFriendliness(TravelEncounter e)
+        {
+            if (e.kind != TravelEncounterKind.MinorThieves && e.kind != TravelEncounterKind.BanditAmbush)
+                return;
+
+            var party = GameState.Instance?.Party;
+            if (party == null || party.GetRelation(FactionId.Bandits) < GameConstants.BanditFriendlyRelationThreshold)
+                return;
+
+            e.friendlyBandits = true;
+            e.title = e.kind == TravelEncounterKind.BanditAmbush ? "Bandit banners, raised in greeting" : "Familiar footpads";
+            e.body = "These raiders know your name — and count you a friend. They wave you through, no toll asked.";
+            e.canFight = false;
+            e.canFlee = true;
+            e.canTalk = true;
+            e.canPay = false;
         }
 
         public void ApplyTravelTime(PartyState party, RoadEdgeData edge)
@@ -83,6 +175,7 @@ namespace Voidovia
             {
                 party.hours -= GameConstants.HoursPerDay;
                 party.day++;
+                GameState.Instance?.OnNewDay();
             }
         }
 
@@ -105,8 +198,10 @@ namespace Voidovia
             TravelEncounterKind.Trader => new TravelEncounter
             {
                 kind = kind,
-                title = "Merchant train",
-                body = "Oxen, cloth, and gossip from Saltmere.",
+                title = "Merchant caravan",
+                body = "Oxen, cloth, and coin bound between markets, a few hired guards riding alongside. Trade with them — or take it all.",
+                canFight = true, // raid the caravan (fight its guards)
+                canFlee = true,
                 canTalk = true,
                 canPay = true
             },

@@ -21,6 +21,8 @@ namespace Voidovia
         /// Visible on the strategic map, but deep content comes later.
         /// </summary>
         public bool isSkeleton;
+        /// <summary>Shown in SettlementMenuUI's description label. Empty until written.</summary>
+        public string flavorText = "";
     }
 
     [Serializable]
@@ -33,6 +35,14 @@ namespace Voidovia
         public float danger = 0.2f;
         public TerrainType terrain = TerrainType.Road;
         public bool allowSevereRaids;
+
+        /// <summary>
+        /// No maintained road — excluded from normal Dijkstra pathfinding and road-drawing.
+        /// Reachable only via JourneyController's off-path travel, with its own speed penalty
+        /// and hostile-weighted encounters.
+        /// </summary>
+        public bool isOffPath;
+        public float offPathSpeedMultiplier = 1.7f;
     }
 
     [Serializable]

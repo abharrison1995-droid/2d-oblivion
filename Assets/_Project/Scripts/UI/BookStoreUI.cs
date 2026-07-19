@@ -100,6 +100,13 @@ namespace Voidovia
                 return;
             }
 
+            if (g.Map.TryGetNode(g.Party.currentNodeId, out var node))
+            {
+                g.Market.EnsureMarket(node);
+                var market = g.Market.Get(node.id);
+                if (market != null) market.buyerGold += card.bookstorePrice;
+            }
+
             _body.text = $"Purchased {card.displayName}. It waits in your pouch for battle.";
             Rebuild();
         }

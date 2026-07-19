@@ -9,7 +9,8 @@ namespace Voidovia
         Castle,
         Village,
         QuestLair,
-        Wilderness
+        Wilderness,
+        BanditCamp
     }
 
     public enum TerrainType
@@ -64,7 +65,9 @@ namespace Voidovia
         Mill,
         Merchants,
         Tavern,
-        ChurchOfTheBlackFluffyTail
+        ChurchOfTheBlackFluffyTail,
+        MooseCavalryYard,
+        CinderFoundry
     }
 
     public enum FactionId
@@ -78,15 +81,17 @@ namespace Voidovia
         Orthodoxy,
         Nomads,
         Healers,
-        Traders
+        Traders,
+        Bandits
     }
 
     public enum QuestState
     {
-        Inactive,
+        Offered,
         Active,
         Completed,
-        Failed
+        Failed,
+        Expired
     }
 
     public enum BattlePhase

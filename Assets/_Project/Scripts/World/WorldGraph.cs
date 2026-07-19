@@ -10,13 +10,20 @@ namespace Voidovia
     {
         readonly Dictionary<string, MapNodeData> _nodes = new();
         readonly Dictionary<string, List<RoadEdgeData>> _adjacency = new();
+        readonly Dictionary<string, RoadEdgeData> _offPathEdges = new();
+        readonly List<RoadEdgeData> _offPathCanonical = new();
 
         public IReadOnlyDictionary<string, MapNodeData> Nodes => _nodes;
+
+        /// <summary>One entry per off-path connection (not doubled for both travel directions) — for drawing.</summary>
+        public IReadOnlyList<RoadEdgeData> OffPathEdges => _offPathCanonical;
 
         public void Load(WorldMapData data)
         {
             _nodes.Clear();
             _adjacency.Clear();
+            _offPathEdges.Clear();
+            _offPathCanonical.Clear();
 
             foreach (var node in data.nodes)
             {
@@ -28,6 +35,25 @@ namespace Voidovia
             {
                 if (!_adjacency.ContainsKey(road.fromNodeId) || !_adjacency.ContainsKey(road.toNodeId))
                     continue;
+
+                if (road.isOffPath)
+                {
+                    _offPathCanonical.Add(road);
+                    _offPathEdges[road.fromNodeId + "|" + road.toNodeId] = road;
+                    _offPathEdges[road.toNodeId + "|" + road.fromNodeId] = new RoadEdgeData
+                    {
+                        id = road.id + "_rev",
+                        fromNodeId = road.toNodeId,
+                        toNodeId = road.fromNodeId,
+                        travelHours = road.travelHours,
+                        danger = road.danger,
+                        terrain = road.terrain,
+                        allowSevereRaids = false,
+                        isOffPath = true,
+                        offPathSpeedMultiplier = road.offPathSpeedMultiplier
+                    };
+                    continue; // not part of normal pathfinding or road-drawing
+                }
 
                 _adjacency[road.fromNodeId].Add(road);
                 // Undirected travel for v1
@@ -45,6 +71,10 @@ namespace Voidovia
             }
         }
 
+        /// <summary>The unmaintained off-path connection between two nodes, if one exists (either direction).</summary>
+        public bool TryGetOffPathEdge(string fromId, string toId, out RoadEdgeData edge) =>
+            _offPathEdges.TryGetValue(fromId + "|" + toId, out edge);
+
         public bool TryGetNode(string id, out MapNodeData node) => _nodes.TryGetValue(id, out node);
 
         public List<RoadEdgeData> GetRoute(string fromId, string toId)
@@ -52,6 +82,19 @@ namespace Voidovia
             var path = new List<RoadEdgeData>();
             if (fromId == toId || !_nodes.ContainsKey(fromId) || !_nodes.ContainsKey(toId))
                 return path;
+
+            // A direct road always wins over a technically-cheaper multi-hop detour — clicking
+            // a directly-connected neighbor should go straight there, not through a third city
+            // Dijkstra found marginally faster by summed travelHours.
+            if (_adjacency.TryGetValue(fromId, out var directEdges))
+            {
+                foreach (var edge in directEdges)
+                {
+                    if (edge.toNodeId != toId) continue;
+                    path.Add(edge);
+                    return path;
+                }
+            }
 
             var dist = new Dictionary<string, float>();
             var prev = new Dictionary<string, RoadEdgeData>();

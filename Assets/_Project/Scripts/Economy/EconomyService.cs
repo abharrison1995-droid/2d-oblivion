@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Voidovia
 {
@@ -34,7 +35,7 @@ namespace Voidovia
                 total += def.weeklyWage * stack.count;
             }
 
-            return total;
+            return Mathf.RoundToInt(total * HeroStatBonuses.LeadershipWageMultiplier() * CompanionBonuses.WageMultiplier());
         }
 
         public float DailyFoodNeed(PartyState party)
@@ -52,10 +53,38 @@ namespace Voidovia
             return need;
         }
 
+        /// <summary>Total remaining food measured in the same "fill" units DailyFoodNeed/ConsumeFood use
+        /// (count × fillPerUnit), so a food-days estimate matches what actually gets eaten. Summing raw
+        /// unit counts understates stores whenever a food's fillPerUnit differs from 1.</summary>
+        public float TotalFoodFill(PartyState party)
+        {
+            var fill = 0f;
+            foreach (var stack in party.food)
+            {
+                if (_foods.TryGetValue(stack.itemId, out var food))
+                    fill += stack.count * food.fillPerUnit;
+                else
+                    fill += stack.count;
+            }
+
+            return fill + party.fractionalFoodFill;
+        }
+
         public bool ConsumeFood(PartyState party, float days, out string log)
         {
             var need = DailyFoodNeed(party) * days;
-            var remaining = need;
+            
+            var remaining = need - party.fractionalFoodFill;
+            if (remaining < 0f)
+            {
+                party.fractionalFoodFill = -remaining;
+                remaining = 0f;
+            }
+            else
+            {
+                party.fractionalFoodFill = 0f;
+            }
+
             var typesEaten = 0;
 
             for (var i = party.food.Count - 1; i >= 0 && remaining > 0.01f; i--)
@@ -73,8 +102,14 @@ namespace Voidovia
                 if (unitsUsed > stack.count)
                     unitsUsed = stack.count;
 
+                var fillProvided = unitsUsed * food.fillPerUnit;
+                if (fillProvided > remaining)
+                {
+                    party.fractionalFoodFill += (fillProvided - remaining);
+                }
+
                 stack.count -= unitsUsed;
-                remaining -= unitsUsed * food.fillPerUnit;
+                remaining -= fillProvided;
                 typesEaten++;
                 if (stack.count <= 0)
                     party.food.RemoveAt(i);
@@ -85,12 +120,19 @@ namespace Voidovia
             if (remaining > 0.01f)
             {
                 log = $"Party is hungry ({remaining:0.0} fill short). Morale will suffer.";
+                party.AddMorale(-15f);
                 return false;
             }
 
-            log = typesEaten >= 2
-                ? "Men ate well — variety kept spirits up."
-                : "Rations issued.";
+            if (typesEaten >= 2)
+            {
+                log = "Men ate well — variety kept spirits up.";
+                party.AddMorale(5f);
+            }
+            else
+            {
+                log = "Rations issued.";
+            }
             return true;
         }
 

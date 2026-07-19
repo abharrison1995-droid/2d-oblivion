@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,17 +6,19 @@ namespace Voidovia
 {
     public class SettlementUI : MonoBehaviour
     {
+        enum Tab { Market, Buildings, Quests }
+
         Canvas _canvas;
         Text _title;
         Text _body;
         RectTransform _list;
         System.Action _onClose;
-        bool _showBuildings;
+        Tab _tab;
 
         public void Open(System.Action onClose = null)
         {
             _onClose = onClose;
-            _showBuildings = false;
+            _tab = Tab.Market;
             Ensure();
             _canvas.gameObject.SetActive(true);
             Rebuild();
@@ -29,14 +32,19 @@ namespace Voidovia
             _title = UiFactory.Label(root, "Title", "Settlement", 34, TextAnchor.UpperCenter, new Color(0.93f, 0.86f, 0.7f));
             Stretch(_title, 0.05f, 0.9f, 0.95f, 0.98f);
 
-            UiFactory.Button(root, "TabMarket", "Market", new Vector2(0.05f, 0.80f), new Vector2(0.49f, 0.88f), () =>
+            UiFactory.Button(root, "TabMarket", "Market", new Vector2(0.05f, 0.80f), new Vector2(0.3367f, 0.88f), () =>
             {
-                _showBuildings = false;
+                _tab = Tab.Market;
                 Rebuild();
             });
-            UiFactory.Button(root, "TabBuildings", "Buildings", new Vector2(0.51f, 0.80f), new Vector2(0.95f, 0.88f), () =>
+            UiFactory.Button(root, "TabBuildings", "Buildings", new Vector2(0.3567f, 0.80f), new Vector2(0.6433f, 0.88f), () =>
             {
-                _showBuildings = true;
+                _tab = Tab.Buildings;
+                Rebuild();
+            });
+            UiFactory.Button(root, "TabQuests", "Quests", new Vector2(0.6633f, 0.80f), new Vector2(0.95f, 0.88f), () =>
+            {
+                _tab = Tab.Quests;
                 Rebuild();
             });
 
@@ -68,10 +76,18 @@ namespace Voidovia
             }
 
             _title.text = node.displayName;
-            if (_showBuildings)
-                RebuildBuildings(g, node);
-            else
-                RebuildMarket(g, node);
+            switch (_tab)
+            {
+                case Tab.Buildings:
+                    RebuildBuildings(g, node);
+                    break;
+                case Tab.Quests:
+                    RebuildQuests(g, node);
+                    break;
+                default:
+                    RebuildMarket(g, node);
+                    break;
+            }
         }
 
         void RebuildMarket(GameState g, MapNodeData node)
@@ -84,14 +100,18 @@ namespace Voidovia
             var y = 0.96f;
             if (node.hasRecruitment || node.type == NodeType.Village)
             {
-                UiFactory.Button(_list, "Recruit", $"Recruit 1× {market.recruitTroopId} ({market.recruitPrice}g)",
-                    new Vector2(0f, y - 0.12f), new Vector2(1f, y), () =>
+                var effId = g.Market.EffectiveRecruitTroopId(market);
+                var effName = g.TroopRoster != null && g.TroopRoster.TryGet(effId, out var edef) ? edef.displayName : effId;
+                var regard = g.NotableRelationOf(node.id);
+                var (rTop, rBottom) = UiFactory.NextRow(ref y, 0.12f, 0.02f);
+                UiFactory.Button(_list, "Recruit",
+                    $"Recruit 1× {effName} ({g.Market.RecruitPrice(market)}g) · {market.recruitStock} left · notable regard {regard}/100",
+                    new Vector2(0f, rBottom), new Vector2(1f, rTop), () =>
                     {
                         g.Market.TryRecruit(g.Party, market, out var log);
                         _body.text = log + $"\n{buyer} gold: {market.buyerGold}g";
                         Rebuild();
-                    });
-                y -= 0.14f;
+                    }, UiFactory.ButtonStyle.Primary);
             }
 
             var hdr = UiFactory.Label(_list, "SellHdr", $"Sell loot to {buyer.ToLowerInvariant()} (they pay {(market.isPeasant ? "less" : "more")})", 18, TextAnchor.MiddleLeft, new Color(0.85f, 0.8f, 0.7f));
@@ -115,9 +135,7 @@ namespace Voidovia
                 if (item.unsellable) continue;
                 var price = g.Market.OfferPrice(item, market);
                 var id = stack.itemId;
-                var top = y;
-                var bottom = y - 0.11f;
-                y = bottom - 0.02f;
+                var (top, bottom) = UiFactory.NextRow(ref y, 0.11f, 0.02f);
                 UiFactory.Button(_list, id + top,
                     $"{item.displayName} x{stack.count} → {price}g  (buyer {market.buyerGold}g)",
                     new Vector2(0f, bottom), new Vector2(1f, top),
@@ -126,7 +144,7 @@ namespace Voidovia
                         g.Market.TrySell(g.Party, market, id, out var log);
                         _body.text = log;
                         Rebuild();
-                    });
+                    }, UiFactory.ButtonStyle.Primary);
             }
         }
 
@@ -153,25 +171,38 @@ namespace Voidovia
             BuildingRow(g, settlement, BuildingType.ArcheryRange, "Archery Range", settlement.HighestArcheryRecruit(), ref y);
             BuildingRow(g, settlement, BuildingType.MilitaryStables, "Military Stables", settlement.HighestStableRecruit(), ref y);
 
-            if (settlement.GetTier(BuildingType.ChurchOfTheBlackFluffyTail) > 0)
-            {
-                Row(ref y, "Church of the Black Fluffy Tail — built", null);
-            }
-            else if (settlement.CanUpgrade(BuildingType.ChurchOfTheBlackFluffyTail, 1))
-            {
-                var cost = BuildCost(BuildingType.ChurchOfTheBlackFluffyTail, 1);
-                Row(ref y, $"Build Church of the Black Fluffy Tail ({cost}g)",
-                    () => TryBuild(g, settlement, BuildingType.ChurchOfTheBlackFluffyTail, 1, cost));
-            }
-            else
-            {
-                Row(ref y, "Church of the Black Fluffy Tail — requires Grotto tier 4", null);
-            }
-
+            SpecialtyRow(g, settlement, BuildingType.ChurchOfTheBlackFluffyTail, "Church of the Black Fluffy Tail", ref y);
             if (settlement.CanRecruitVoidKnight())
             {
                 RecruitRow(g, "void_knight_foot", ref y);
                 RecruitRow(g, "void_knight_mount", ref y);
+            }
+
+            SpecialtyRow(g, settlement, BuildingType.MooseCavalryYard, "Moose Cavalry Yard", ref y);
+            if (settlement.CanRecruitMooseLancer())
+                RecruitRow(g, "void_moose_lancer", ref y);
+
+            SpecialtyRow(g, settlement, BuildingType.CinderFoundry, "Cinder Foundry", ref y);
+            if (settlement.CanRecruitCinderGuard())
+                RecruitRow(g, "void_cinder_guard", ref y);
+        }
+
+        /// <summary>Shared built / can-build / needs-Grotto-tier-4 row for a Grotto-tier-4-gated,
+        /// single-build specialty building (Church + the newer specialties).</summary>
+        void SpecialtyRow(GameState g, SettlementState settlement, BuildingType type, string label, ref float y)
+        {
+            if (settlement.GetTier(type) > 0)
+            {
+                Row(ref y, $"{label} — built", null);
+            }
+            else if (settlement.CanUpgrade(type, 1))
+            {
+                var cost = BuildCost(type, 1);
+                Row(ref y, $"Build {label} ({cost}g)", () => TryBuild(g, settlement, type, 1, cost));
+            }
+            else
+            {
+                Row(ref y, $"{label} — requires Grotto tier 4", null);
             }
         }
 
@@ -199,15 +230,74 @@ namespace Voidovia
         void RecruitRow(GameState g, string troopId, ref float y)
         {
             if (!g.TroopRoster.TryGet(troopId, out var def)) return;
-            Row(ref y, $"Recruit 1× {def.displayName} ({def.hireFee}g)", () => TryRecruitTroop(g, def));
+            var price = Mathf.Max(1, Mathf.RoundToInt(def.hireFee * HeroStatBonuses.TradeBuyMultiplier()));
+            Row(ref y, $"Recruit 1× {def.displayName} ({price}g)", () => TryRecruitTroop(g, def, price));
         }
 
-        void Row(ref float y, string label, System.Action onClick)
+        void RebuildQuests(GameState g, MapNodeData node)
         {
-            var top = y;
-            var bottom = y - 0.10f;
-            y = bottom - 0.015f;
-            var btn = UiFactory.Button(_list, "Row" + _list.childCount, label, new Vector2(0f, bottom), new Vector2(1f, top), onClick);
+            _body.text = $"Your gold: {g.Party.gold}g   Day {g.Party.day}";
+            var y = 0.97f;
+
+            var offers = g.QuestBoard.OffersAt(node.id);
+            if (offers.Count == 0)
+                Row(ref y, "No quests posted here today.", null);
+
+            foreach (var offer in offers)
+            {
+                var inst = offer;
+                Row(ref y, $"{inst.title} — {inst.rewardGold}g (due in {Mathf.Max(0, inst.deadlineDay - g.Party.day)}d)", null);
+                Row(ref y, inst.description, null);
+                Row(ref y, "Accept", () =>
+                {
+                    g.QuestBoard.TryAccept(node.id, inst.instanceId, g, out var log);
+                    _body.text = log;
+                    Rebuild();
+                });
+            }
+
+            var active = new List<QuestInstance>(g.QuestBoard.ActiveAt(node.id));
+            if (active.Count > 0)
+                Row(ref y, "— In progress —", null);
+
+            foreach (var inst in active)
+            {
+                var toTurnIn = inst;
+                Row(ref y, $"{inst.title} — {StatusFor(inst, g)}", null);
+                if (g.QuestBoard.IsReadyToTurnIn(inst, g.Party, g.Party.day))
+                {
+                    Row(ref y, $"Turn in ({inst.rewardGold}g)", () =>
+                    {
+                        g.QuestBoard.TryTurnIn(toTurnIn, g, out var log);
+                        _body.text = log;
+                        Rebuild();
+                    });
+                }
+            }
+        }
+
+        static string StatusFor(QuestInstance inst, GameState g) => inst.type switch
+        {
+            QuestTemplateType.BanditHideoutClear or QuestTemplateType.BountyHunt =>
+                "travel there and use \"! Quest\" to fight",
+            QuestTemplateType.EscortCaravan => $"travel to {DisplayNodeName(g, inst.escortDestinationNodeId)}",
+            QuestTemplateType.DeliveryFetch =>
+                $"deliver at {DisplayNodeName(g, inst.deliveryDestinationNodeId)} by day {inst.deadlineDay}",
+            QuestTemplateType.TroopLevy => $"bring {inst.levyCount}× {DisplayTroopName(g, inst.levyTroopId)} here",
+            _ => "in progress"
+        };
+
+        static string DisplayNodeName(GameState g, string nodeId) =>
+            g.Map.TryGetNode(nodeId, out var n) ? n.displayName : nodeId;
+
+        static string DisplayTroopName(GameState g, string troopId) =>
+            g.TroopRoster != null && g.TroopRoster.TryGet(troopId, out var def) ? def.displayName : troopId;
+
+        void Row(ref float y, string label, System.Action onClick, UiFactory.ButtonStyle style = UiFactory.ButtonStyle.Primary)
+        {
+            var (top, bottom) = UiFactory.NextRow(ref y, 0.10f, 0.015f);
+            var btn = UiFactory.Button(_list, "Row" + _list.childCount, label, new Vector2(0f, bottom), new Vector2(1f, top), onClick,
+                onClick != null ? style : UiFactory.ButtonStyle.Secondary);
             btn.interactable = onClick != null;
         }
 
@@ -226,21 +316,39 @@ namespace Voidovia
             }
 
             g.Party.gold -= cost;
+            if (g.Map.TryGetNode(g.Party.currentNodeId, out var node))
+            {
+                g.Market.EnsureMarket(node);
+                var market = g.Market.Get(node.id);
+                if (market != null) market.buyerGold += cost;
+            }
             _body.text = $"Built for {cost}g.";
             Rebuild();
         }
 
-        void TryRecruitTroop(GameState g, TroopDefinition def)
+        void TryRecruitTroop(GameState g, TroopDefinition def, int price)
         {
-            if (g.Party.gold < def.hireFee)
+            if (!g.CanRecruit(1, out var capReason))
             {
-                _body.text = $"Need {def.hireFee}g to hire {def.displayName}.";
+                _body.text = capReason;
                 return;
             }
 
-            g.Party.gold -= def.hireFee;
+            if (g.Party.gold < price)
+            {
+                _body.text = $"Need {price}g to hire {def.displayName}.";
+                return;
+            }
+
+            g.Party.gold -= price;
             g.AddTroop(def.id, 1);
-            _body.text = $"Hired 1× {def.displayName} for {def.hireFee}g.";
+            if (g.Map.TryGetNode(g.Party.currentNodeId, out var node))
+            {
+                g.Market.EnsureMarket(node);
+                var market = g.Market.Get(node.id);
+                if (market != null) market.buyerGold += price;
+            }
+            _body.text = $"Hired 1× {def.displayName} for {price}g.";
             Rebuild();
         }
 
@@ -249,6 +357,8 @@ namespace Voidovia
         {
             BuildingType.GovernorsGrotto => targetTier * targetTier * 100,
             BuildingType.ChurchOfTheBlackFluffyTail => 400,
+            BuildingType.MooseCavalryYard => 380,
+            BuildingType.CinderFoundry => 360,
             _ => targetTier * 80
         };
     }

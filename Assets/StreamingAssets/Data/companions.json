@@ -1,0 +1,12 @@
+{
+  "companions": [
+    { "id": "bangkok_kuo", "displayName": "Bangkok Kuo", "role": "Eastern general", "traitDescription": "Loyal; loves the art of war; quotes Sun Tzu in battle pauses.", "bonusType": 0, "bonusValue": 0.06, "recruitCost": 0, "homeNodeId": "", "isQuestReward": false },
+    { "id": "dell_hoskin", "displayName": "Sergeant Dell Hoskin", "role": "Quartermaster", "traitDescription": "Ex-Voidovia logistics sergeant. Squeezes a wage bill dry and hates waste.", "bonusType": 2, "bonusValue": 0.10, "recruitCost": 120, "homeNodeId": "greyledger", "isQuestReward": false },
+    { "id": "old_maro", "displayName": "Old Maro, the Ledger-Keeper", "role": "Merchant", "traitDescription": "Retired trader who still knows every buyer's soft spot.", "bonusType": 1, "bonusValue": 0.08, "recruitCost": 100, "homeNodeId": "saltmere", "isQuestReward": false },
+    { "id": "fenn_willowtrack", "displayName": "Fenn Willowtrack", "role": "Scout", "traitDescription": "Reads a road better than most read a book.", "bonusType": 3, "bonusValue": 2, "recruitCost": 90, "homeNodeId": "red_knoll", "isQuestReward": false },
+    { "id": "yara_cross", "displayName": "Widow Yara Cross", "role": "Drillmaster", "traitDescription": "Buried two husbands and a war band. Still barks orders like she means it.", "bonusType": 4, "bonusValue": 0.03, "recruitCost": 140, "homeNodeId": "millwright", "isQuestReward": false },
+    { "id": "sister_yelen", "displayName": "Sister Yelen", "role": "Field surgeon", "traitDescription": "Cut her teeth on battlefield wounds, not scripture. Fewer of your fallen stay fallen, and the wounded mend quicker under her hand.", "bonusType": 7, "bonusValue": 0.15, "recruitCost": 130, "homeNodeId": "saltmere", "isQuestReward": false },
+    { "id": "kestrel", "displayName": "Kestrel", "role": "Reformed bounty", "traitDescription": "Knows where the coin is buried better than most — a reward for running down her old crew.", "bonusType": 5, "bonusValue": 0.10, "recruitCost": 0, "homeNodeId": "", "isQuestReward": true },
+    { "id": "brother_ansel", "displayName": "Brother Ansel", "role": "Noble's steward", "traitDescription": "Knows every recruiter in the region by name — grateful after a levy well handled.", "bonusType": 6, "bonusValue": 0.10, "recruitCost": 0, "homeNodeId": "", "isQuestReward": true }
+  ]
+}

@@ -26,58 +26,82 @@ namespace Voidovia
         {
             var g = GameState.Instance;
             var player = new BattleForce { name = "Your warband", troops = new List<TroopStack>(g.Party.troops) };
-            var enemy = new BattleForce
-            {
-                name = "Buttery Lair",
-                troops = new List<TroopStack>
-                {
-                    new() { troopId = "void_militia", count = 8 },
-                    new() { troopId = "voidovan_cattle_rustler", count = 3 }
-                }
-            };
+            var enemy = BattleForceTables.Lair(g.Rng);
             Begin(player, enemy, true, StolenItemQuestController.ButterChiefId, onFinished);
         }
 
-        public void BeginEncounterBattle(TravelEncounterKind kind, Action<BattleOutcome> onFinished)
+        public void BeginEncounterBattle(TravelEncounter encounter, Action<BattleOutcome> onFinished)
         {
             var g = GameState.Instance;
             var player = new BattleForce { name = "Your warband", troops = new List<TroopStack>(g.Party.troops) };
-            Begin(player, EncounterForce(kind), false, null, onFinished);
+            var enemy = encounter.cachedForce ?? EncounterForce(encounter.kind);
+            Begin(player, enemy, false, null, onFinished);
         }
 
-        static BattleForce EncounterForce(TravelEncounterKind kind) => kind switch
+        public void BeginBanditCampBattle(string campDisplayName, Action<BattleOutcome> onFinished)
+        {
+            var g = GameState.Instance;
+            var player = new BattleForce { name = "Your warband", troops = new List<TroopStack>(g.Party.troops) };
+            Begin(player, BattleForceTables.BanditCamp(campDisplayName, g.Rng), false, null, onFinished, isCampRaid: true);
+        }
+
+        /// <summary>Fallback flat composition, used only if an encounter somehow reaches battle without a
+        /// pre-rolled cachedForce (e.g. an older TravelEncounter created before that field existed).</summary>
+        public static BattleForce BanditCampForce(string displayName) => new()
+        {
+            name = displayName,
+            faction = FactionId.ButterKlanBoys,
+            troops = new List<TroopStack>
+            {
+                new() { troopId = "butter_thug", count = 10 },
+                new() { troopId = "butter_raider", count = 4 }
+            }
+        };
+
+        public static int ForceCount(BattleForce force)
+        {
+            var total = 0;
+            foreach (var t in force.troops) total += t.count;
+            return total;
+        }
+
+        public static BattleForce EncounterForce(TravelEncounterKind kind) => kind switch
         {
             TravelEncounterKind.MinorThieves => new BattleForce
             {
                 name = "Footpads",
-                troops = new List<TroopStack> { new() { troopId = "void_militia", count = 3 } }
+                faction = FactionId.ButterKlanBoys,
+                troops = new List<TroopStack> { new() { troopId = "butter_thug", count = 3 } }
             },
             TravelEncounterKind.BanditAmbush => new BattleForce
             {
                 name = "Bandit ambush",
+                faction = FactionId.ButterKlanBoys,
                 troops = new List<TroopStack>
                 {
-                    new() { troopId = "void_militia", count = 5 },
-                    new() { troopId = "voidovan_cattle_rustler", count = 2 }
+                    new() { troopId = "butter_thug", count = 5 },
+                    new() { troopId = "butter_slinger", count = 2 }
                 }
             },
             TravelEncounterKind.ButterRaid => new BattleForce
             {
                 name = "Butter warband",
+                faction = FactionId.ButterKlanBoys,
                 troops = new List<TroopStack>
                 {
-                    new() { troopId = "void_militia", count = 6 },
-                    new() { troopId = "voidovan_cattle_rustler", count = 3 }
+                    new() { troopId = "butter_raider", count = 5 },
+                    new() { troopId = "butter_potthrower", count = 3 }
                 }
             },
             _ => new BattleForce
             {
                 name = "Hostiles",
-                troops = new List<TroopStack> { new() { troopId = "void_militia", count = 2 } }
+                faction = FactionId.ButterKlanBoys,
+                troops = new List<TroopStack> { new() { troopId = "butter_thug", count = 2 } }
             }
         };
 
-        public void Begin(BattleForce player, BattleForce enemy, bool captureLord, string lordId, Action<BattleOutcome> onFinished)
+        public void Begin(BattleForce player, BattleForce enemy, bool captureLord, string lordId, Action<BattleOutcome> onFinished, bool isCampRaid = false)
         {
             _onFinished = onFinished;
             _active = true;
@@ -85,7 +109,7 @@ namespace Voidovia
             _selectedPower = null;
             EnsureUi();
             _canvas.gameObject.SetActive(true);
-            GameState.Instance.Battle.Begin(player, enemy, captureLord, lordId);
+            GameState.Instance.Battle.Begin(player, enemy, captureLord, lordId, isCampRaid);
             _title.text = $"{player.name} vs {enemy.name}";
             _kuo.text = "Kuo: \"Orders by banner — infantry and mounts may move as one mind, or two.\"";
             _log.text = "Select one command per unit type you field, optional power card, then Commit Turn.";
@@ -264,14 +288,77 @@ namespace Voidovia
                 RefreshTurn();
         }
 
+        /// <summary>Turns the battle's generic captures into recruit/ransom/release-able prisoners, tagged
+        /// with the enemy's faction, up to the overall holding capacity. Named lords are handled elsewhere.</summary>
+        static void TakeGenericPrisoners(BattleOutcome outcome)
+        {
+            if (outcome.capturedTroops == null || outcome.capturedTroops.Count == 0) return;
+            var g = GameState.Instance;
+            var enemyFaction = g.Battle.Enemy?.faction ?? FactionId.Bandits;
+            var taken = 0;
+
+            foreach (var cap in outcome.capturedTroops)
+            {
+                var name = g.TroopRoster != null && g.TroopRoster.TryGet(cap.troopId, out var def)
+                    ? $"{def.displayName} Captive"
+                    : "Captive";
+                for (var i = 0; i < cap.count; i++)
+                {
+                    if (g.Party.prisoners.Count >= GameConstants.PrisonerCapacity) break;
+                    g.Party.AddPrisoner(g.NextPrisonerId(), name, cap.troopId, isLord: false, sourceFaction: enemyFaction);
+                    taken++;
+                }
+            }
+
+            if (taken > 0)
+                outcome.summary += $"\n{taken} captured — held for ransom, recruiting, or release (see Party ▸ Prisoners).";
+        }
+
         void Finish()
         {
             if (!_active) return;
             _active = false;
             var outcome = GameState.Instance.Battle.Finalize(GameState.Instance.Rng);
 
-            if (outcome.playerCasualties > 0)
+            // Apply the exact troops the sim killed (weakest-first) rather than stripping the
+            // biggest stacks blind. A share of each loss is merely wounded (recoverable), not dead —
+            // more so when you win. Fall back to the old count-based removal only if the detailed
+            // breakdown is somehow empty (e.g. an outcome from before this field existed).
+            if (outcome.playerLossesByTroop != null && outcome.playerLossesByTroop.Count > 0)
+            {
+                var woundedFraction = (outcome.playerVictory
+                    ? GameConstants.WoundedFractionVictory
+                    : GameConstants.WoundedFractionDefeat) + CompanionBonuses.FieldMedicineBonus();
+                woundedFraction = Mathf.Clamp01(woundedFraction);
+                var totalWounded = 0;
+                foreach (var loss in outcome.playerLossesByTroop)
+                {
+                    GameState.Instance.Party.RemoveTroops(loss.troopId, loss.count);
+                    var wounded = Mathf.RoundToInt(loss.count * woundedFraction);
+                    if (wounded > 0)
+                    {
+                        GameState.Instance.Party.AddWounded(loss.troopId, wounded);
+                        totalWounded += wounded;
+                    }
+                }
+
+                if (totalWounded > 0)
+                    outcome.summary += $"\n{totalWounded} wounded — they'll mend if you keep them alive.";
+            }
+            else if (outcome.playerCasualties > 0)
+            {
                 GameState.Instance.Party.RemoveMen(outcome.playerCasualties);
+            }
+
+            if (outcome.goldLooted > 0)
+                GameState.Instance.Party.gold += outcome.goldLooted;
+
+            TakeGenericPrisoners(outcome);
+
+            if (outcome.xpGained > 0)
+                outcome.summary += $"\n+{outcome.xpGained} XP, +{outcome.warbandExperienceGained} Warband Experience";
+            foreach (var levelUp in outcome.levelUpLogs)
+                outcome.summary += $"\n{levelUp}";
 
             foreach (var cardId in outcome.rewardPowerCardIds)
             {

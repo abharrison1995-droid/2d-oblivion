@@ -16,6 +16,8 @@ namespace Voidovia
         public string toNodeId;
         public bool arrivesAtNode;
         public string arriveNodeId;
+        public bool isOffPath;
+        public float offPathSpeedMultiplier = 1f;
     }
 
     /// <summary>
@@ -35,7 +37,7 @@ namespace Voidovia
         public float CalculateHoursPerStep(PartyState party, CharacterStats hero, JourneyStep step, TroopRosterData roster)
         {
             var mountRatio = MountRatio(party, roster);
-            var scouting = hero?.scouting ?? 5;
+            var scouting = (hero?.scouting ?? 5) + CompanionBonuses.ScoutingBonus();
             // Base inch time; mounts and scouting shorten; terrain lengthens; big parties drag.
             var hours = 1.15f;
             hours *= TerrainMult(step.terrain);
@@ -43,7 +45,9 @@ namespace Voidovia
             hours *= 1f - Mathf.Clamp((scouting - 5) * 0.03f, -0.15f, 0.2f);
             var men = Mathf.Max(1, party.TotalMen);
             hours *= 1f + Mathf.Clamp01((men - 8) / 40f) * 0.35f;
-            return Mathf.Clamp(hours, 0.35f, 3.5f);
+            if (step.isOffPath)
+                hours *= step.offPathSpeedMultiplier;
+            return Mathf.Clamp(hours, 0.35f, step.isOffPath ? 6f : 3.5f);
         }
 
         public float EventChance(PartyState party, CharacterStats hero, JourneyStep step, TroopRosterData roster)
@@ -51,7 +55,12 @@ namespace Voidovia
             var chance = step.danger * 0.55f + 0.08f;
             var mountRatio = MountRatio(party, roster);
             chance *= 1f - mountRatio * 0.25f; // mounts evade some roadside mess
-            chance *= 1f - Mathf.Clamp((hero.scouting - 5) * 0.04f, -0.2f, 0.25f);
+            var scouting = hero.scouting + CompanionBonuses.ScoutingBonus();
+            chance *= 1f - Mathf.Clamp((scouting - 5) * 0.04f, -0.2f, 0.25f);
+            if (step.isOffPath)
+                chance += 0.18f; // no maintained road — remote ground draws more trouble
+            if ((party.reputation & ReputationFlag.Infamous) != 0)
+                chance += GameConstants.InfamousDangerBonus; // a notorious band attracts trouble
             return Mathf.Clamp01(chance);
         }
 
@@ -106,6 +115,57 @@ namespace Voidovia
             return IsActive;
         }
 
+        /// <summary>
+        /// Direct bushwhack to an off-path-only destination (bandit camps) — no Dijkstra route,
+        /// just a straight line along the single off-path edge, flagged so speed/danger/encounter
+        /// rolls apply the off-path penalties.
+        /// </summary>
+        public bool BeginOffPath(WorldGraph map, string fromId, string toId, out string error)
+        {
+            error = null;
+            _steps.Clear();
+
+            if (!map.TryGetOffPathEdge(fromId, toId, out var edge))
+            {
+                error = "No off-path route.";
+                return false;
+            }
+
+            if (!map.TryGetNode(fromId, out var a) || !map.TryGetNode(toId, out var b))
+            {
+                error = "Bad start.";
+                return false;
+            }
+
+            CurrentMapPos = a.mapPosition;
+            DestinationId = toId;
+
+            var inches = Mathf.Max(2, Mathf.RoundToInt(edge.travelHours / 2f));
+            for (var i = 1; i <= inches; i++)
+            {
+                var t = i / (float)inches;
+                var pos = Vector2.Lerp(a.mapPosition, b.mapPosition, t);
+                _steps.Add(new JourneyStep
+                {
+                    edgeId = edge.id,
+                    terrain = edge.terrain,
+                    danger = edge.danger,
+                    allowSevereRaids = false,
+                    worldPos = pos,
+                    fromNodeId = fromId,
+                    toNodeId = toId,
+                    arrivesAtNode = i == inches,
+                    arriveNodeId = i == inches ? toId : null,
+                    isOffPath = true,
+                    offPathSpeedMultiplier = edge.offPathSpeedMultiplier
+                });
+            }
+
+            StepIndex = 0;
+            IsActive = _steps.Count > 0;
+            return IsActive;
+        }
+
         public bool TryAdvance(
             PartyState party,
             CharacterStats hero,
@@ -136,6 +196,7 @@ namespace Voidovia
             {
                 party.hours -= GameConstants.HoursPerDay;
                 party.day++;
+                GameState.Instance?.OnNewDay();
             }
 
             CurrentMapPos = step.worldPos;
@@ -144,12 +205,24 @@ namespace Voidovia
             var chance = EventChance(party, hero, step, roster);
             if (rng.NextDouble() < chance)
             {
-                encounter = travel.RollEncounter(new RoadEdgeData
+                var edgeForRoll = new RoadEdgeData
                 {
                     danger = Mathf.Clamp01(step.danger + 0.15f),
                     terrain = step.terrain,
                     allowSevereRaids = step.allowSevereRaids
-                }, rng);
+                };
+                encounter = step.isOffPath
+                    ? travel.RollOffPathEncounter(edgeForRoll, rng)
+                    : travel.RollEncounter(edgeForRoll, rng);
+            }
+
+            // A wanted outlaw draws Voidovia patrols on maintained roads — odds climb with the bounty.
+            if (encounter.kind == TravelEncounterKind.None && !step.isOffPath && party.IsWantedInVoidovia)
+            {
+                var patrolChance = Mathf.Clamp01(
+                    GameConstants.WantedPatrolBaseChance + party.bounty * GameConstants.WantedPatrolChancePerBounty);
+                if (rng.NextDouble() < patrolChance)
+                    encounter = travel.RollWantedPatrol(rng);
             }
 
             StepIndex++;
@@ -177,6 +250,26 @@ namespace Voidovia
             IsActive = false;
             _steps.Clear();
             StepIndex = 0;
+        }
+
+        /// <summary>
+        /// Odds of slipping away from a fight-capable encounter instead of it forcing battle.
+        /// Mounts and scouting improve the odds; tougher encounters are harder to shake.
+        /// </summary>
+        public static float EscapeChance(TravelEncounterKind kind, PartyState party, CharacterStats hero, TroopRosterData roster)
+        {
+            var baseChance = kind switch
+            {
+                TravelEncounterKind.MinorThieves => 0.85f,
+                TravelEncounterKind.BanditAmbush => 0.6f,
+                TravelEncounterKind.ButterRaid => 0.4f,
+                TravelEncounterKind.VoidoviaPatrol => 0.5f,
+                _ => 1f
+            };
+            var mountRatio = MountRatio(party, roster);
+            var scouting = (hero?.scouting ?? 5) + CompanionBonuses.ScoutingBonus();
+            var scoutingBonus = Mathf.Clamp(scouting - 5, -5, 10) * 0.03f;
+            return Mathf.Clamp01(baseChance + mountRatio * 0.3f + scoutingBonus);
         }
 
         static float MountRatio(PartyState party, TroopRosterData roster)
