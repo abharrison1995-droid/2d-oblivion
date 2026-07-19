@@ -70,6 +70,7 @@ namespace Voidovia
             FactionId.RaXaelDynasty => "Ra-Xael Dynasty",
             FactionId.SmallSpine => "Small Spine",
             FactionId.LongSpines => "Long Spines",
+            FactionId.Orthodoxy => "The Orthodoxy",
             _ => f.ToString()
         };
 
