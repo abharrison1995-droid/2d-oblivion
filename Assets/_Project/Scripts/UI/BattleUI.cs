@@ -103,17 +103,8 @@ namespace Voidovia
 
         public void Begin(BattleForce player, BattleForce enemy, bool captureLord, string lordId, Action<BattleOutcome> onFinished, bool isCampRaid = false)
         {
-            _onFinished = onFinished;
-            _active = true;
-            _selectedCommands.Clear();
-            _selectedPower = null;
-            EnsureUi();
-            _canvas.gameObject.SetActive(true);
-            GameState.Instance.Battle.Begin(player, enemy, captureLord, lordId, isCampRaid);
-            _title.text = $"{player.name} vs {enemy.name}";
-            _kuo.text = "Kuo: \"Orders by banner — infantry and mounts may move as one mind, or two.\"";
-            _log.text = "Select one command per unit type you field, optional power card, then Commit Turn.";
-            RefreshTurn();
+            var manager = new GameObject("BattleManager2D").AddComponent<Voidovia.Battle2D.BattleManager2D>();
+            manager.Begin(player, enemy, onFinished);
         }
 
         void EnsureUi()
